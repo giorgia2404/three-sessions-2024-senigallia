@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "dat.gui": "^0.7.9",
+    "simplex-noise": "^4.0.1",
+    "stats.js": "^0.17.0",
+    "three": "^0.152.2",
+    "three-subdivide": "^1.1.2"
+  },
+  "devDependencies": {
+    "vite": "^4.3.5",
+    "vite-plugin-dynamic-import": "^1.4.0"
+  }
+}
