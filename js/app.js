@@ -1,4 +1,4 @@
-// By @fupete (c) 2023 | MIT License
+// By @fupete (c) 2024 | MIT License
 //
 // Credits: the base keyboard VJ engine idea is inspired and builded upon the works: 
 // RBVJ by George Gally Radarboy https://github.com/GeorgeGally/rbvj/ 
@@ -13,13 +13,12 @@
 // [mouse] orbit controls + depends on the sketch (testing)
 // 
 // SCENES:
-// 0 - GRID 
-// 1 - PLANETS 
-// 2 - TEMPLE
-// 3 - CLOUDS
-// 4 - SKULL
-// 5 - LAVA
-// 6 - ALLUCINATIONS
+// 0 - COLORS
+// 1 - MIRROR
+// 2 - BIG
+// 3 - LANDSCAPE
+// 4 - MACRO
+// ...
 // 
 // COMING UP: 
 // - Initial loader
