@@ -1,12 +1,13 @@
-# THREE-SESSIONS-2023-SENIGALLIA
-2023 - Daniele @Fupete and the course DEL-2023 at DESIGN.unirsm  
-[github.com/del-2023-unirsm](https://github.com/del-2023-unirsm) — [github.com/fupete](https://github.com/fupete)  
-_Educational purposes_, __MIT License__, 2023, San Marino  
+# THREE-SESSIONS-2024-SENIGALLIA
+2024 - Daniele @Fupete and the course DEL-2023 at DESIGN.unirsm  
+[github.com/del-2023-unirsm](https://github.com/del-2024-unirsm) — [github.com/fupete](https://github.com/fupete)  
+_Educational purposes_, __MIT License__, 2024, San Marino  
 
 ## INTRO
-Live interactive 3D digital backgrounds in the browser for theatre performance "Le Nuvole" by Aristofane. Concept design info and photos (italian language) on this wiki: https://github.com/del-2023-unirsm/three-sessions-2023-senigallia/wiki. 
+Live interactive 3D digital backgrounds in the browser for theatre performance "Orlando Furioso" by Ludovico Ariosto. _In progress_
 
-Previous year project/app for "The Macbeth" is here: https://github.com/Fupete/p5-sessions-2022-senigallia, and we have some concept design info and photos (italian language) on this wiki https://github.com/ds-2022-unirsm/p5-sessions-2022-senigallia/wiki.
+Previous year project/app for "The Nuvole" is here: https://github.com/Fupete/three-sessions-2023-senigallia, and we have some concept design info and photos (italian language) on this wiki https://github.com/del-2023-unirsm/three-sessions-2023-senigallia/wiki.
+Two years ago project/app for "The Macbeth" is here: https://github.com/Fupete/p5-sessions-2022-senigallia, and we have some concept design info and photos (italian language) on this wiki https://github.com/ds-2022-unirsm/p5-sessions-2022-senigallia/wiki.
 
 ##  CREDITS
 The base VJ engine and is heavily inspired and build upon the works of 
