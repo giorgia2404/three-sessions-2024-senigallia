@@ -26,6 +26,7 @@ export function sketch() {
         // ...
     }
 
+    
     // CAMERA
     // other parameters
     let near = 0.2, far = 1000
