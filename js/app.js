@@ -386,11 +386,11 @@ const randomSketch = () => {
 	// pure random
 	// global.playSet = Math.round(Math.random() * (sets.length - 1));
 	// weighted random
-	// let totalWeights = setWeights.reduce((a, b) => a + b, 0)
+	// let totalWeights = setsWeights.reduce((a, b) => a + b, 0)
 	const totalWeights = 1
 	// console.log(totalWeights)
 	let r = Math.random() * totalWeights
-	global.playSet = sets.find((_, i) => (r -= setWeights[i]) <= 0)
+	global.playSet = sets.find((_, i) => (r -= setsWeights[i]) <= 0)
 	// playSketch
 	const playSetHowManySketches = sketches[playSet] - 2;
 	global.playSketch = 1 + Math.round(Math.random() * (playSetHowManySketches));
