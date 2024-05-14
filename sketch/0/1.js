@@ -25,14 +25,14 @@ export function sketch() {
     // PARAMETERS
     const p = {
         // colors
-        availableColorsHighlights: [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff],
-        availableColors: [0xcc0000, 0x00cc00, 0x0000cc, 0xcccc00, 0x00cccc, 0xcc00cc],
+        availableColorsHighlights: [0xffffff, 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff],
+        availableColors: [0xffffff, 0xcc0000, 0x00cc00, 0x0000cc, 0xcccc00, 0x00cccc, 0xcc00cc],
         // objects
         lightSpeed: 1,
         // ...
         // view
         lookAtCenter: new THREE.Vector3(0, 0, 0),
-        cameraPosition: new THREE.Vector3(0, 0.5, -10),
+        cameraPosition: new THREE.Vector3(0, 1, -10),
         autoRotate: false,
         autoRotateSpeed: -.05,
         camera: 35,
@@ -168,7 +168,7 @@ export function sketch() {
     RectAreaLightUniformsLib.init();
     let rectLightWidth = 4
     let rectLightHeight = 5.5
-    let rectLightIntensity = 20
+    let rectLightIntensity = 5
     const rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], rectLightIntensity, rectLightWidth, rectLightHeight)
     rectLight.position.set(0, p.floor + rectLightHeight / 2, 10)
     scene.add(rectLight)
@@ -176,8 +176,8 @@ export function sketch() {
     rectLight.add(rectLightHelper);
 
 
-    const light = new THREE.DirectionalLight(0xffffff, .5)
-    light.position.set(0, 5, 10)
+    const light = new THREE.DirectionalLight(0xffffff, .4)
+    light.position.set(0, 2, 10)
     // light.target = cube
     light.castShadow = true
     light.shadow.radius = 8
