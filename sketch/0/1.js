@@ -168,8 +168,8 @@ export function sketch() {
     const rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], rectLightIntensity, rectLightWidth, rectLightHeight)
     rectLight.position.set(0, p.floor + rectLightHeight / 2, 10)
     scene.add(rectLight)
-    const rectLightHelper = new RectAreaLightHelper(rectLight);
-    rectLight.add(rectLightHelper);
+    const rectLightHelper = new RectAreaLightHelper(rectLight)
+    rectLight.add(rectLightHelper)
 
 
     const light = new THREE.DirectionalLight(0xffffff, .4)
@@ -205,8 +205,6 @@ export function sketch() {
 
         // ANIMATION
         const t = t0 + performance.now() * 0.0001
-
-        // ANIMATION
         const t1 = t * p.lightSpeed + 0
         light.position.x = -3 + noise3D(0, t1, 0) * 6
         // ...
