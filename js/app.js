@@ -244,10 +244,10 @@ global.initAudio = () => { // OPENDAY 2024 AND BROWSER EDITION + SOUNDTRACK
 	document.getElementById("loader").style.display = "none"
 	// randomSketch()
 	// toggleDirector()
-	const soundtrack = document.createElement('audio')
-	soundtrack.src = "assets/soundtrack/soundtrack.mp3"
-	soundtrack.loop = true;
-	soundtrack.play();
+	// const soundtrack = document.createElement('audio')
+	// soundtrack.src = "assets/soundtrack/soundtrack.mp3"
+	// soundtrack.loop = true;
+	// soundtrack.play();
 }
 
 // UI
