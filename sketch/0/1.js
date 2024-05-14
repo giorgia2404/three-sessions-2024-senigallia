@@ -1,13 +1,22 @@
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
+import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
+
 let scene
-let groundMate, cubeMate
-let groundGeom, cubeGeom
+let groundMate, humanMate
+let groundGeom
 let animation
 let onWindowResize
 let noise3D
 // let gui
 let controls
+let loaderGLTF
 
 export function sketch() {
     // console.log("Sketch launched")
@@ -15,8 +24,10 @@ export function sketch() {
     // PARAMETERS
     const p = {
         // colors
-        availableColors: [0xff0000, 0x00ff00, 0x0000ff], 
+        availableColorsHighlights: [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff],
+        availableColors: [0xcc0000, 0x00cc00, 0x0000cc, 0xcccc00, 0x00cccc, 0xcc00cc],
         // objects
+        lightSpeed: 1,
         // ...
         // view
         lookAtCenter: new THREE.Vector3(0, 0, 0),
@@ -26,18 +37,17 @@ export function sketch() {
         camera: 35,
         // ...
         // world
-        background: new THREE.Color(0xffffff), 
+        background: new THREE.Color(0xffffff),
         floor: -0.5,
         // ...
     }
 
     // select main scene color, random choose for now
-    let whichColor = p.availableColors[p.availableColors.length * Math.random() | 0]
-    console.log(whichColor)
-    p.background = new THREE.Color(whichColor)
-    
+    let whichColor = p.availableColors.length * Math.random() | 0
+    p.background = new THREE.Color(p.availableColors[whichColor])
+
     // other parameters
-    let near = 0.2, far = 1000
+    let near = 0.2, far = 200
     let shadowMapWidth = 2048, shadowMapHeight = 2048
 
     // CAMERA
@@ -60,8 +70,10 @@ export function sketch() {
     controls.dampingFactor = 0.05
     controls.minDistance = 5
     controls.maxDistance = 15
-    controls.maxPolarAngle = Math.PI / 2 + 0.2
-    controls.minPolarAngle = Math.PI / 2 - 0.4
+    controls.maxPolarAngle = Math.PI / 2
+    controls.minPolarAngle = Math.PI / 2 - 0.2
+    controls.maxAzimuthAngle = - Math.PI / 2
+    controls.minAzimuthAngle = Math.PI / 2
     controls.autoRotate = p.autoRotate
     controls.autoRotateSpeed = p.autoRotateSpeed
     controls.target = p.lookAtCenter
@@ -71,16 +83,21 @@ export function sketch() {
     scene.background = p.background
     scene.fog = new THREE.Fog(scene.background, 10, 30)
     // materials
-    cubeMate = new THREE.MeshStandardMaterial({ color: p.background, roughness: 1 })
-    groundMate = new THREE.MeshStandardMaterial({ color: p.background, roughness: 1 })
+    humanMate = new THREE.MeshStandardMaterial({
+        color: p.background,
+        roughness: 0.5,
+        metalness: 0,
+        fog: true
+    })
+    groundMate = new THREE.MeshStandardMaterial({
+        color: p.background,
+        roughness: 1,
+        metalness: 0,
+        fog: true,
+    })
+
 
     // GEOMETRIES
-    // Cube
-    cubeGeom = new THREE.BoxGeometry(.5, 1.5)
-    let cube = new THREE.Mesh(cubeGeom, cubeMate)
-    scene.add(cube)
-    cube.position.set(0, .25, 0)
-    cube.castShadow = true
     // let's make a ground
     groundGeom = new THREE.PlaneGeometry(20, 20)
     let ground = new THREE.Mesh(groundGeom, groundMate)
@@ -91,22 +108,76 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
 
-    // LIGHTS
-    let lightS = new THREE.SpotLight(0x999999, 1, 0, Math.PI / 5, 0.5)
-    lightS.position.set(10, 10, 12)
-    lightS.target.position.set(0, 0, 0)
-    lightS.castShadow = true
-    lightS.shadow.camera.near = 2
-    lightS.shadow.camera.far = 200
-    lightS.shadow.bias = 0.0001
-    lightS.shadow.mapSize.width = shadowMapWidth
-    lightS.shadow.mapSize.height = shadowMapHeight
-    scene.add(lightS)
+    // Let's load our low poly human
+    //GLTFLoader
+    let gltfLoaded = false
+    let human
+    loaderGLTF = new GLTFLoader()
+    loaderGLTF.load(
+        // resource URL
+        './assets/models/low-poly_male_body/scene.gltf',
+        // called when the resource is loaded
+        (gltf) => {
+            // gltf.animations // Array<THREE.AnimationClip>
+            // gltf.scene.scale.set(0.075, 0.075, 0.075)
+            // gltf.scene.position.x = -0.85
+            // gltf.scene.position.y = 3.35
+            // gltf.scene // THREE.Group
+            // gltf.scenes // Array<THREE.Group>
+            // gltf.asset // Object
+            // gltf.scene.children[0].material = material XXX
+            human = gltf.scene
+            human.scale.set(1.5, 1.5, 1.5)
+            const box = new THREE.Box3().setFromObject(human);
+            const size = box.getSize(new THREE.Vector3());
+            human.traverse((node) => {
+                if (node.isMesh) {
+                    node.material = humanMate
+                    node.castShadow = true
+                }
+            })
+            human.position.y = p.floor + size.y / 2
+            human.rotation.y = Math.PI
+            scene.add(human)
+            console.log(human)
+            // let humanMat = human.children[0].material
+            // console.log(humanMat)
+            // let calaveraMat = calavera.children[0].material
+            // console.log(calaveraMat)
+            // calaveraMat.map = null
+            // calaveraMat.roughness = 1
+            gltfLoaded = true
+        },
+        (xhr) => {
+            // console.log((xhr.loaded / xhr.total * 100) + '% loaded')
+        },
+        (error) => {
+            // console.log('An error happened loading the GLTF scene')
+        }
+    )
 
-    const light = new THREE.DirectionalLight(0xffffff, 1)
-    light.position.set(-10, 3, 0)
-    light.target.position.set(-5, 0, 0)
+
+    // LIGHTS
+    RectAreaLightUniformsLib.init();
+    const rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], 5, 4, 10)
+    rectLight.position.set(0, 0, 10)
+    scene.add(rectLight)
+    const rectLightHelper = new RectAreaLightHelper(rectLight);
+    rectLight.add(rectLightHelper);
+
+    const light = new THREE.DirectionalLight(0xffffff, .5)
+    light.position.set(0, 5, 10)
+    // light.target = cube
+    light.castShadow = true
+    light.shadow.radius = 8
+    light.shadow.camera.near = 2
+    light.shadow.camera.far = 200
+    light.shadow.bias = 0.0001
+    light.shadow.mapSize.width = shadowMapWidth
+    light.shadow.mapSize.height = shadowMapHeight
     scene.add(light)
+    // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
+    // scene.add(lightHelper);
 
     // GUI
     // gui = new GUI.GUI()
@@ -124,6 +195,11 @@ export function sketch() {
         if (showStats) stats.begin() // XXX
 
         // ANIMATION
+        const t = t0 + performance.now() * 0.0001
+
+        // ANIMATION
+        const t1 = t * p.lightSpeed + 0
+        light.position.x = -3 + noise3D(0, t1, 0) * 6
         // ...
 
         controls.update()
@@ -140,8 +216,7 @@ export function dispose() {
     controls?.dispose()
     groundGeom?.dispose()
     groundMate?.dispose()
-    cubeGeom?.dispose()
-    cubeMate?.dispose()
+    humanMate?.dispose()
     noise3D = null
     // gui?.destroy()
     // ...
