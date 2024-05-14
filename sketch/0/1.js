@@ -17,6 +17,7 @@ let noise3D
 // let gui
 let controls
 let loaderGLTF
+let mixer
 
 export function sketch() {
     // console.log("Sketch launched")
@@ -87,7 +88,8 @@ export function sketch() {
         color: p.background,
         roughness: 0.5,
         metalness: 0,
-        fog: true
+        fog: true,
+        flatShading: true,
     })
     groundMate = new THREE.MeshStandardMaterial({
         color: p.background,
@@ -115,7 +117,7 @@ export function sketch() {
     loaderGLTF = new GLTFLoader()
     loaderGLTF.load(
         // resource URL
-        './assets/models/low-poly_male_body/scene.gltf',
+        './assets/models/low-poly_male/scene.gltf',
         // called when the resource is loaded
         (gltf) => {
             // gltf.animations // Array<THREE.AnimationClip>
@@ -127,25 +129,28 @@ export function sketch() {
             // gltf.asset // Object
             // gltf.scene.children[0].material = material XXX
             human = gltf.scene
-            human.scale.set(1.5, 1.5, 1.5)
+            // human.scale.set(1.5, 1.5, 1.5)
             const box = new THREE.Box3().setFromObject(human);
             const size = box.getSize(new THREE.Vector3());
             human.traverse((node) => {
                 if (node.isMesh) {
                     node.material = humanMate
                     node.castShadow = true
+                    node.receiveShadow = true
                 }
             })
-            human.position.y = p.floor + size.y / 2
+            human.position.y = p.floor + size.y / 2 - 0.5
+            human.position.z = 2
             human.rotation.y = Math.PI
+            // animations
+            mixer = new THREE.AnimationMixer(human)
+            let action = mixer.clipAction(gltf.animations[0])
+            action.play()
+            //
             scene.add(human)
-            console.log(human)
+            // console.log(human)
             // let humanMat = human.children[0].material
             // console.log(humanMat)
-            // let calaveraMat = calavera.children[0].material
-            // console.log(calaveraMat)
-            // calaveraMat.map = null
-            // calaveraMat.roughness = 1
             gltfLoaded = true
         },
         (xhr) => {
@@ -158,12 +163,18 @@ export function sketch() {
 
 
     // LIGHTS
+
+    // big rect
     RectAreaLightUniformsLib.init();
-    const rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], 5, 4, 10)
-    rectLight.position.set(0, 0, 10)
+    let rectLightWidth = 4
+    let rectLightHeight = 5.5
+    let rectLightIntensity = 20
+    const rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], rectLightIntensity, rectLightWidth, rectLightHeight)
+    rectLight.position.set(0, p.floor + rectLightHeight / 2, 10)
     scene.add(rectLight)
     const rectLightHelper = new RectAreaLightHelper(rectLight);
     rectLight.add(rectLightHelper);
+
 
     const light = new THREE.DirectionalLight(0xffffff, .5)
     light.position.set(0, 5, 10)
@@ -190,6 +201,8 @@ export function sketch() {
     noise3D = NOISE.createNoise3D()
     const t0 = Math.random() * 10
 
+    const clock = new THREE.Clock()
+
     // ANIMATE
     const animate = () => {
         if (showStats) stats.begin() // XXX
@@ -201,6 +214,9 @@ export function sketch() {
         const t1 = t * p.lightSpeed + 0
         light.position.x = -3 + noise3D(0, t1, 0) * 6
         // ...
+
+        let dt = clock.getDelta()
+        if (mixer) mixer.update(dt)
 
         controls.update()
         renderer.render(scene, camera) // RENDER
