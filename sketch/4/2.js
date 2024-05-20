@@ -1,43 +1,27 @@
 //TEST CLOTH + 3D MODEL
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-let scene, groundGeom, groundMate, material, animation, onWindowResize, world, controls, composer, renderPass, bloomPass;
-const pieceMaterials = [];
-let cloth, clothParticles, constraints = [];
-let objectBody;
+let scene, animation, onWindowResize, controls
+let groundGeom
+let groundMate, clothMaterial, mirrorMate
+let world
+let cloth, clothParticles, constraints = []
+// let objectBody
 
 export function sketch() {
     const p = {
-        // start
-        fromSky: false,
-        slowBuild: true,
-        slowBuildDelay: 1,
-        pauseAfterBuild: true,
-        pauseAfterBuildTime: 20,
-         // columns
-        columnsNo: 8,
-        columnsRadius: 12,
-        piecesNo: 11,
-        piaceMaxSize: 0.9,
         // view
-        lookAtCenter: new THREE.Vector3(Math.random() * -4, 4, Math.random() * 4),
-        cameraPosition: new THREE.Vector3(0, 0.5, 0),
-        autoRotate: true,
+        lookAtCenter: new THREE.Vector3(0, 0, 0),
+        cameraPosition: new THREE.Vector3(0, 4, -20),
+        autoRotate: false,
         autoRotateSpeed: -1 + Math.random() * 2,
-        camera: 75,
-        // bloom
-        exposure: 0.5,
-        bloomStrength: 2,
-        bloomThreshold: 0.2,
-        bloomRadius: 0.7,
+        camera: 48,
         // world
-        gravity: -5.0,
-        floor: -1,
+        background: new THREE.Color(0x000000),
+        clothMass: 1,
+        gravity: -9.75,
+        floor: -7,
     };
 
     // other parameters
@@ -46,10 +30,9 @@ export function sketch() {
     let paused = false;
 
     // CAMERA
-    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far);
-    camera.position.copy(p.cameraPosition);
-    camera.position.z = - p.columnsRadius / 2;
-    camera.lookAt(p.lookAtCenter);
+    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    camera.position.copy(p.cameraPosition)
+    camera.lookAt(p.lookAtCenter)
 
     // WINDOW RESIZE
     onWindowResize = () => {
@@ -60,68 +43,34 @@ export function sketch() {
     window.addEventListener('resize', onWindowResize);
 
     // SCENE
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-    scene.fog = new THREE.Fog(scene.background, 15, 100);
+    scene = new THREE.Scene()
+    scene.background = p.background
+    scene.fog = new THREE.Fog(scene.background, 10, 50)
     world = new CANNON.World({
         gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
 
-    // POST-PROCESSING
-    // composer = new EffectComposer(renderer);
-    // renderPass = new RenderPass(scene, camera);
-    // composer.addPass(renderPass);
-    // bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    // bloomPass.threshold = p.bloomThreshold;
-    // bloomPass.strength = p.bloomStrength;
-    // bloomPass.radius = p.bloomRadius;
-    // composer.addPass(bloomPass);
-
 
     // Static ground plane
-    groundGeom = new THREE.PlaneGeometry(50, 50);
-    groundMate = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.1 });
-    let ground = new THREE.Mesh(groundGeom, groundMate);
-    ground.position.set(0, p.floor, 0);
-    ground.rotation.x = - Math.PI / 2;
-    ground.scale.set(100, 100, 100);
-    ground.castShadow = false;
-    ground.receiveShadow = true;
-    scene.add(ground);
-    const groundBody = new CANNON.Body({
-        position: new CANNON.Vec3(0, p.floor, 0),
-        mass: 0,
-        shape: new CANNON.Plane(),
-    });
-    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-    groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-    world.addBody(groundBody);
-    ground.position.copy(groundBody.position);
-    ground.quaternion.copy(groundBody.quaternion);
-
-    // LIGHTS
-    let lightS = new THREE.SpotLight(0xffffff, 1, 200, Math.PI / 5, 0.1);
-    lightS.position.set(0, 50, 0);
-    lightS.target.position.set(0, 0, 0);
-    lightS.castShadow = true;
-    lightS.shadow.camera.near = 5;
-    lightS.shadow.camera.far = 200;
-    lightS.shadow.bias = 0.0001;
-    lightS.shadow.mapSize.width = shadowMapWidth;
-    lightS.shadow.mapSize.height = shadowMapHeight;
-    scene.add(lightS);
-
-    const light = new THREE.DirectionalLight(0xffffff, 0.8);
-    light.position.set(-4, 4, 0);
-    light.target.position.set(0, 10, 10);
-    scene.add(light);
-
-    const pointLight2 = new THREE.PointLight(0xffffff, 0.5);
-    pointLight2.position.set(0, 2, 0);
-    scene.add(pointLight2);
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // Reduced intensity
-    scene.add(ambientLight);
+    // groundGeom = new THREE.PlaneGeometry(50, 50);
+    // groundMate = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.1 });
+    // let ground = new THREE.Mesh(groundGeom, groundMate);
+    // ground.position.set(0, p.floor, 0);
+    // ground.rotation.x = - Math.PI / 2;
+    // ground.scale.set(100, 100, 100);
+    // ground.castShadow = false;
+    // ground.receiveShadow = true;
+    // scene.add(ground);
+    // const groundBody = new CANNON.Body({
+    //     position: new CANNON.Vec3(0, p.floor, 0),
+    //     mass: 0,
+    //     shape: new CANNON.Plane(),
+    // });
+    // groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+    // groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+    // world.addBody(groundBody);
+    // ground.position.copy(groundBody.position);
+    // ground.quaternion.copy(groundBody.quaternion);
 
     // CONTROLS
     controls = new OrbitControls(camera, renderer.domElement);
@@ -137,102 +86,131 @@ export function sketch() {
     controls.target = p.lookAtCenter;
 
     // CREATE THE CLOTH
-    const clothSize = 7;
-    const clothSegments = 40; // Increased resolution
-    const clothGeometry = new THREE.PlaneGeometry(clothSize, clothSize, clothSegments, clothSegments);
-    const clothMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0xffffff, side: THREE.DoubleSide 
-    });
-    cloth = new THREE.Mesh(clothGeometry, clothMaterial);
-    cloth.position.set(0, 4, 0); 
-    scene.add(cloth);
+    const cWidth = 7, cHeight = 7
+    const cResX = 20, cResY = 20
 
-    const mass = 0.05; // Reduced mass for better interaction
-    const restDistance = clothSize / clothSegments;
-    clothParticles = [];
+    const clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, cResX, cResY)
+    //    clothMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+    mirrorMate = new THREE.MeshPhongMaterial({
+        color: 0x444444,
+        envMap: cubeTextures[0].texture,
+        side: THREE.DoubleSide,
+        // combine: THREE.addOperation,
+        reflectivity: 1,
+        // specular: 0x999999,
+        fog: false
+    })
 
-    for (let i = 0; i <= clothSegments; i++) {
-        clothParticles.push([]);
-        for (let j = 0; j <= clothSegments; j++) {
-            const particle = new CANNON.Body({
-                mass: mass,
-                position: new CANNON.Vec3(
-                    i * restDistance - clothSize / 2,
-                    2,
-                    j * restDistance - clothSize / 2
-                ),
-                shape: new CANNON.Particle(),
-                velocity: new CANNON.Vec3(0, 0, 0)
-            });
-            clothParticles[i].push(particle);
-            world.addBody(particle);
-        }
-    }
+    cloth = new THREE.Mesh(clothGeometry, mirrorMate)
+    cloth.position.set(0, p.floor + 0.5 + cHeight, 0)
+    cloth.castShadow = true
+    cloth.receiveShadow = true
+    scene.add(cloth)
 
-    const connectParticles = (i1, j1, i2, j2) => {
-        const particleA = clothParticles[i1][j1];
-        const particleB = clothParticles[i2][j2];
+    const restDistanceX = cWidth / cResX
+    const restDistanceY = cHeight / cResY
+    clothParticles = []
+    const mass = p.clothMass
+
+    const connectParticles = (x1, y1, x2, y2) => {
+        const particleA = clothParticles[x1][y1];
+        const particleB = clothParticles[x2][y2];
         const distance = particleA.position.distanceTo(particleB.position);
         const constraint = new CANNON.DistanceConstraint(particleA, particleB, distance);
         world.addConstraint(constraint);
         constraints.push(constraint);
-    };
+    }
 
-    for (let i = 0; i < clothSegments; i++) {
-        for (let j = 0; j < clothSegments; j++) {
-            connectParticles(i, j, i, j + 1);
-            connectParticles(i, j, i + 1, j);
-            if (i < clothSegments && j < clothSegments) {
-                connectParticles(i, j, i + 1, j + 1);
-                connectParticles(i + 1, j, i, j + 1);
+    for (let x = 0; x <= cResX; x++) {
+        clothParticles.push([])
+        for (let y = 0; y <= cResY; y++) {
+            const particle = new CANNON.Body({
+                mass: y === cResY ? 0 : mass,
+                // mass: y === 0 && x === 0 || y === cResY && x === 0 ? 0 : mass,
+                // mass: y === cResY && x === cResX || y === cResY && x === 0 ? 0 : mass,
+                position: new CANNON.Vec3(
+                    x * restDistanceX - cWidth / 2,
+                    2,
+                    y * restDistanceY - cHeight / 2
+                ),
+                shape: new CANNON.Particle(),
+                velocity: new CANNON.Vec3(0, 0, 0),
+                linearDamping: .5
+            });
+
+            clothParticles[x].push(particle);
+            world.addBody(particle);
+        }
+    }
+
+    for (let x = 0; x < cResX; x++) {
+        for (let y = 0; y < cResY; y++) {
+            connectParticles(x, y, x, y + 1);
+            connectParticles(x, y, x + 1, y);
+            if (x === cResX - 1 && y < cResY) {
+                connectParticles(x, y, x + 1, y + 1);
+                connectParticles(x + 1, y, x, y + 1);
             }
         }
     }
 
-    // Fix the vertices of the cloth
-    clothParticles[0][0].mass = 0;
-    clothParticles[clothSegments][0].mass = 0;
-    clothParticles[0][clothSegments].mass = 0;
-    clothParticles[clothSegments][clothSegments].mass = 0;
-
-    // After 2 sec, release the vertices of the cloth
-    setTimeout(() => {
-        clothParticles[0][0].mass = mass;
-        clothParticles[clothSegments][0].mass = mass;
-        clothParticles[0][clothSegments].mass = mass;
-        clothParticles[clothSegments][clothSegments].mass = mass;
-    }, 2000);
-
     // Initialize the vertices of the cloth
     const vertices = [];
-    for (let i = 0; i <= clothSegments; i++) {
-        for (let j = 0; j <= clothSegments; j++) {
+    for (let x = 0; x <= cResX; x++) {
+        for (let y = 0; y <= cResY; y++) {
             vertices.push(new THREE.Vector3());
         }
     }
     clothGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices.length * 3), 3));
 
     // LOAD 3D MODEL
-    const loader = new GLTFLoader();
-    loader.load('./assets/STATUA.glb', function (gltf) {
-        const object = gltf.scene;
-        object.position.set(0, 0, 0);
-        object.scale.set(0.04, 0.04, 0.04);
-        scene.add(object);
+    // const loader = new GLTFLoader();
+    // loader.load('./assets/STATUA.glb', function (gltf) {
+    //     const object = gltf.scene;
+    //     object.position.set(0, 0, 0);
+    //     object.scale.set(0.04, 0.04, 0.04);
+    //     scene.add(object);
 
-        // Add physics to the custom 3D model
-        const boundingBox = new THREE.Box3().setFromObject(object);
-        const size = new THREE.Vector3();
-        boundingBox.getSize(size);
-        const boxShape = new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2));
-        objectBody = new CANNON.Body({ mass: 0 });
-        objectBody.addShape(boxShape);
-        objectBody.position.copy(object.position);
-        world.addBody(objectBody);
+    //     // Add physics to the custom 3D model
+    //     const boundingBox = new THREE.Box3().setFromObject(object);
+    //     const size = new THREE.Vector3();
+    //     boundingBox.getSize(size);
+    //     const boxShape = new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2));
+    //     objectBody = new CANNON.Body({ mass: 0 });
+    //     objectBody.addShape(boxShape);
+    //     objectBody.position.copy(object.position);
+    //     world.addBody(objectBody);
 
-        // Ensure objectBody is in the correct position
-        objectBody.position.set(object.position.x, object.position.y, object.position.z);
-    });
+    //     // Ensure objectBody is in the correct position
+    //     objectBody.position.set(object.position.x, object.position.y, object.position.z);
+    // });
+
+    const light = new THREE.DirectionalLight(0xffffff, 10)
+    light.position.set(0, 2, -5)
+    light.target = cloth
+    light.castShadow = true
+    light.shadow.radius = 8
+    light.shadow.camera.near = 2
+    light.shadow.camera.far = 200
+    light.shadow.bias = 0.0001
+    light.shadow.mapSize.width = shadowMapWidth
+    light.shadow.mapSize.height = shadowMapHeight
+    scene.add(light)
+    // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
+    // scene.add(lightHelper);
+
+    const lightD = new THREE.DirectionalLight(0xffffff, 1)
+    light.position.set(0, 3, -3)
+    light.target.position.set(0, 0, 0)
+    scene.add(lightD)
+    // const pointLight = new THREE.PointLight(0xffffff, 2)
+    // pointLight.position.set(20, 20, 20)
+    // scene.add(pointLight)
+    // const pointLight2 = new THREE.PointLight(0xffffff, .1)
+    // pointLight2.position.set(-30, 20, -20)
+    // scene.add(pointLight2)
+    // const ambientLight = new THREE.AmbientLight(0xffffff)
+    // scene.add(ambientLight)
 
 
     // ANIMATE
@@ -253,10 +231,10 @@ export function sketch() {
 
             // CANNON
             const positions = cloth.geometry.attributes.position.array;
-            for (let i = 0; i <= clothSegments; i++) {
-                for (let j = 0; j <= clothSegments; j++) {
-                    const particle = clothParticles[i][j];
-                    const index = (i * (clothSegments + 1) + j) * 3;
+            for (let x = 0; x <= cResX; x++) {
+                for (let y = 0; y <= cResY; y++) {
+                    const particle = clothParticles[x][y];
+                    const index = (x * (cResX + 1) + y) * 3; // xxx
                     positions[index] = particle.position.x;
                     positions[index + 1] = particle.position.y;
                     positions[index + 2] = particle.position.z;
@@ -267,7 +245,6 @@ export function sketch() {
 
         controls.update();
         renderer.render(scene, camera);
-        // composer.render();
         if (showStats) stats.end();
 
         animation = requestAnimationFrame(animate);
@@ -278,19 +255,10 @@ export function sketch() {
 export function dispose() {
     cancelAnimationFrame(animation);
     controls?.dispose();
+    clothMaterial?.dispose();
+    mirrorMate?.dispose();
     groundGeom?.dispose();
     groundMate?.dispose();
-    pieceGeometry?.dispose();
-    material?.dispose();
-    for (let i = 0; i < pieceMaterials.length; i++) {
-        pieceMaterials[i]?.dispose();
-    }
     world = null;
-    let id = window.setTimeout(function () { }, 0);
-    while (id--) {
-        window.clearTimeout(id);
-    }
-    composer?.dispose();
-    renderPass?.dispose();
     window?.removeEventListener('resize', onWindowResize);
 }
