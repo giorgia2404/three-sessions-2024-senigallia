@@ -344,6 +344,7 @@ const loadTexture = (name, path, format) => {
 // global.cubeTextures[n]
 loadCubeTexture('PureSky', './assets/textures/cube/PureSky-256/', '.png') // 0
 loadCubeTexture('PureSky', './assets/textures/cube/AbandonedParking-1024/', '.png') // 1
+loadCubeTexture('PureSky', './assets/textures/cube/cloud/', '.png') // 2
 // ...
 // global.textures[n]
 loadTexture('StoneDiff', './assets/textures/stone_tiles_02_diff_1k', '.jpg') // 0
