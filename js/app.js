@@ -375,26 +375,22 @@ window.addEventListener('load', init)
 /* change to a random set and sketch */
 const randomSketch = () => {
 	/* 
-	0 grid
-	1 planets
-	2 columns
-	3 fluids/clouds
-	4 skulls
-	5 fire
-	6 end titles
+	0 colors
+	1 mirror
+ 	...
 	*/
-	const sets = [0, 1, 2, 3, 4] // available sets
-	const setsWeighs = [0.20, 0.20, 0.20, 0.20, 0.20] // available sets: probability weight
-	const sketches = [1, 1, 1, 1, 1, 1, 1] // no. of available sketches for each set
+	const sets = [0, 1] // available sets
+	const setsWeights = [0.50, 0.50] // available sets: probability weight
+	const sketches = [1, 1] // no. of available sketches for each set
 	// playSet
 	// pure random
 	// global.playSet = Math.round(Math.random() * (sets.length - 1));
 	// weighted random
-	// let totalWeights = setsWeighs.reduce((a, b) => a + b, 0)
+	// let totalWeights = setsWeights.reduce((a, b) => a + b, 0)
 	const totalWeights = 1
 	// console.log(totalWeights)
 	let r = Math.random() * totalWeights
-	global.playSet = sets.find((_, i) => (r -= setsWeighs[i]) <= 0)
+	global.playSet = sets.find((_, i) => (r -= setsWeights[i]) <= 0)
 	// playSketch
 	const playSetHowManySketches = sketches[playSet] - 2;
 	global.playSketch = 1 + Math.round(Math.random() * (playSetHowManySketches));
