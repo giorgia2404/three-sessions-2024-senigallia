@@ -112,7 +112,7 @@ export function sketch() {
     })
     mergeVertices(parentGeometry)
     let parent
-    dispMap = textures[3].texture, 
+    dispMap = textures[0].texture, 
     material2 = new THREE.MeshPhongMaterial({
         color: 0xFFFFFF, 
         color: 0x9c9c9c,
@@ -120,7 +120,7 @@ export function sketch() {
         transparent: true,
         map: textures[1].texture,
         displacementMap: dispMap,
-        displacementScale: 0.03,
+        displacementScale: 0.02,
         displacementBias: 0.0,
         bumpMap: dispMap,
         bumpScale: 0.06,
@@ -131,7 +131,7 @@ export function sketch() {
     dispMap.wrapS = dispMap.wrapT = THREE.RepeatWrapping
     dispMap.repeat.set(1, 1)
     parent = new THREE.Mesh(parentGeometry, material2)
-    parent.position.y = 1
+    parent.position.y = -3
     parent.position.x = -3
     parent.scale.set(p.parentScale, p.parentScale, p.parentScale)
     parent.castShadow = true
