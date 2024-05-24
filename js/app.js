@@ -384,9 +384,9 @@ const randomSketch = () => {
 	1 mirror
  	...
 	*/
-	const sets = [0, 1] // available sets
-	const setsWeights = [0.50, 0.50] // available sets: probability weight
-	const sketches = [1, 1] // no. of available sketches for each set
+	const sets = [0, 1, 4] // available sets
+	const setsWeights = [0.33, 0.33, 0.33] // available sets: probability weight
+	const sketches = [1, 1, 2] // no. of available sketches for each set
 	// playSet
 	// pure random
 	// global.playSet = Math.round(Math.random() * (sets.length - 1));
