@@ -176,6 +176,8 @@ export function sketch() {
                 connectParticles(x, y, x + 1, y);
             } else if (x === Nx && y < Ny) {
                 connectParticles(x, y, x, y + 1);
+            } else if (x < Nx && y === Ny) {
+                connectParticles(x, y, x +1, y);
             }
         }
     }
