@@ -397,8 +397,8 @@ const randomSketch = () => {
 	let r = Math.random() * totalWeights
 	global.playSet = sets.find((_, i) => (r -= setsWeights[i]) <= 0)
 	// playSketch
-	const playSetHowManySketches = sketches[playSet] - 2;
-	global.playSketch = 1 + Math.round(Math.random() * (playSetHowManySketches));
+	const playSetHowManySketches = sketches[playSet];
+	global.playSketch = 1 + Math.floor(Math.random() * (playSetHowManySketches));
 	// console.log(playSet, playSetHowManySketches, playSketch);
 	changeSet(global.playSet);
 	changeSketch(global.playSketch);
