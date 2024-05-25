@@ -1,0 +1,315 @@
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+
+import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+
+
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
+import { materialEmissive, metalness, texture } from 'three/examples/jsm/nodes/Nodes.js'
+
+
+
+let scene
+let geometry, groundGeom, groundMate
+let material, material2, mirrorMate
+let animation
+let onWindowResize
+let noise3D
+let controls
+let composer
+let renderPass
+let bloomPass
+let loaderGLTF
+
+export function sketch() {
+    // console.log("Sketch launched")
+
+    const p = {
+        // colors
+        availableColorsHighlights: [0xffffff, 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff],
+        availableColors: [0xffffff, 0xcc0000, 0x00cc00, 0x0000cc, 0xcccc00, 0x00cccc, 0xcc00cc],
+        // time
+        timeSpeed: 0.0001,
+        // planet
+        planetScale: 3,
+        planetScaleAuto: true,
+        planetScaleMax: .25,
+        planetPos: new THREE.Vector3(0, 3, 0),
+        planetSpeed: .7,
+        planetRotationSpeed: 2,
+        // view
+        lookAtCenter: new THREE.Vector3(0, 0, 0),
+        cameraPosition: new THREE.Vector3(-4 + Math.random() * 10, -3, 10 + Math.random() * 5),
+        autoRotate: false,
+        autoRotateSpeed: -0.02,
+        camera: 35,
+        // bloom
+        exposure: 0,
+        bloomStrength: 2,
+        bloomThreshold: .25,
+        bloomRadius: 1.2,
+        // world
+        background: new THREE.Color(0x333333),
+        floor: -4,
+    }
+
+    // select main scene color, random choose for now
+    // let whichColor = p.availableColors.length * Math.random() | 0
+    // p.background = new THREE.Color(p.availableColors[whichColor])
+
+    // other parameters
+    let near = 0.2, far = 100
+    let shadowMapWidth = 2048, shadowMapHeight = 2048
+
+    // CAMERA
+    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    camera.position.copy(p.cameraPosition)
+    camera.lookAt(p.lookAtCenter)
+
+    // WINDOW RESIZE
+    const onWindowResize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    window.addEventListener('resize', onWindowResize)
+
+    // CONTROLS
+    controls = new OrbitControls(camera, renderer.domElement)
+    controls.enablePan = false
+    controls.enableDamping = true
+    controls.dampingFactor = 0.05
+    controls.minDistance = 10
+    controls.maxDistance = 25
+    controls.maxPolarAngle = Math.PI / 2 + 0.2
+    controls.minPolarAngle = Math.PI / 2 - 0.4
+    controls.autoRotate = p.autoRotate
+    controls.autoRotateSpeed = p.autoRotateSpeed
+    controls.target = p.lookAtCenter
+
+    // SCENE
+    scene = new THREE.Scene()
+    scene.background = p.background
+    scene.fog = new THREE.Fog(scene.background, near, far)
+    // geometry = new THREE.ConeGeometry(1, 2, 64)
+
+    mirrorMate = new THREE.MeshPhongMaterial({
+        color: 0xffffff,
+        map: textures[1].texture,
+        envMap: cubeTextures[0].texture,
+        // side: THREE.DoubleSide,
+        combine: THREE.addOperation,
+        reflectivity: 1,
+        // flatShading: true,
+        shininess: 100,
+        // specular: 0x999999,
+        fog: true
+    })
+
+    //  eye
+    // This "skull" model is based on "Skull Salazar (Downloadable)" (https://sketchfab.com/3d-models/skull-salazar-downloadable-eeed09437afb4e1ea8a6ff3b0e9964ad) by jvitorsouzadesign (https://sketchfab.com/jvitorsouzadesign) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+    //GLTFLoader
+    //eye
+    let gltfLoaded = false
+    let eye, eye2, eye3
+    let modelGroup;
+
+    loaderGLTF = new GLTFLoader()
+    loaderGLTF.load(
+        './assets/eye/scene.gltf',
+        (gltf) => {
+
+            gltfLoaded = true
+
+            eye = gltf.scene.children[0]
+            // eye.position.copy(p.lookAtCenter)
+            eye.position.y = .7
+            eye.rotation.x = -1.4
+
+            eye.traverse((node) => {
+                if (node.isMesh) {
+                    node.castShadow = true
+                    // node.receiveShadow = true
+                    if (node.name === "Object_4") {
+                        node.material = mirrorMate
+                        // node.material.roughness = 0
+                        // node.material.metalness = .2
+                        // node.material.fog = true
+                    }
+                }
+            })
+
+            scene.add(eye)
+
+            eye2 = clone(eye);
+            eye2.position.x = -5;
+            eye2.position.z = -2;
+            scene.add(eye2);
+
+            eye3 = clone(eye);
+            eye3.position.x = 5;
+            eye3.position.z = -2;
+            scene.add(eye3);
+
+            // let eyeMat = eye.children[0].children[0].material
+            // console.log(calaveraMat)
+            // eyeMat.map = null
+            // calaveraToothMat.map = null
+            // calaveraMat.roughness = 1
+            // calaveraToothMat.roughness = 1
+            gltfLoaded = true
+        },
+        (xhr) => {
+            // console.log((xhr.loaded / xhr.total * 100) + '% loaded')
+        },
+        (error) => {
+            // console.log('An error happened loading the GLTF scene')
+            alert(error)
+        }
+    )
+
+
+    // POST-PROCESSING
+    composer = new EffectComposer(renderer)
+    renderPass = new RenderPass(scene, camera)
+    composer.addPass(renderPass)
+    //bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    //bloomPass.threshold = p.bloomThreshold
+    //bloomPass.strength = p.bloomStrength
+    //bloomPass.radius = p.bloomRadius
+    //composer.addPass(bloomPass)
+
+    // Planet cone
+    /*let planet
+    material = new THREE.MeshStandardMaterial({
+        color: 0xff99ff,
+        map: textures[0].texture,
+        roughness: 0,
+        metalness: 0
+    })
+    planet = new THREE.Mesh(geometry, material)
+    planet.rotation.z += Math.PI
+    planet.position.y = 0
+    planet.position.x = 0
+    planet.scale.set(p.planetScale, p.planetScale, p.planetScale)
+    planet.castShadow = true
+    planet.receiveShadow = true
+    // scene.add(planet)
+     
+    // Planet cone 2
+    let planet2
+    material2 = new THREE.MeshStandardMaterial({
+        color: 0xbb8833,
+        map: textures[0].texture,
+        roughness: 0,
+        metalness: 0
+    })
+    planet2 = new THREE.Mesh(geometry, material2)
+    // planet2.rotation.z += Math.PI
+    planet2.position.y = 0
+    planet2.position.x = 0
+    planet2.scale.set(p.planetScale, p.planetScale, p.planetScale)
+    planet2.castShadow = true
+    planet2.receiveShadow = true
+    // scene.add(planet2) */
+
+    // LIGHTS
+    let lightS = new THREE.SpotLight(0x999999, 1, 0, Math.PI / 5, 0.5)
+    lightS.position.set(1, 2, 10)
+    lightS.target.position.set(0, 0, 0)
+    lightS.castShadow = true
+    lightS.shadow.camera.near = 5
+    lightS.shadow.camera.far = 200
+    lightS.shadow.bias = 0.0001
+    lightS.shadow.mapSize.width = shadowMapWidth
+    lightS.shadow.mapSize.height = shadowMapHeight
+    scene.add(lightS)
+
+    const light = new THREE.DirectionalLight(0xffffff, .5)
+    light.position.set(0, 2, 10)
+    light.target.position.clone(eye)
+    // light.castShadow = true
+    scene.add(light)
+    // const light2 = new THREE.DirectionalLight(0xffffff, .4)
+    // light.position.set(-10, 3, -10)
+    // light.target.position.set(-5, 0, 0)
+    // light.castShadow = true
+    // scene.add(light2)
+    const pointLight1 = new THREE.PointLight(0xffffff, 1)
+    pointLight1.position.set(0, 1, 2)
+    scene.add(pointLight1)
+    // const pointLight = new THREE.PointLight(0xffffff, .5)
+    // pointLight.position.set(20, 20, 20)
+    // scene.add(pointLight)
+    // const pointLight2 = new THREE.PointLight(0xffffff, .1)
+    // pointLight2.position.set(-30, 20, -20)
+    // scene.add(pointLight2)
+    // const ambientLight = new THREE.AmbientLight(0xffffff)
+    // scene.add(ambientLight)
+
+    // let's make a ground
+    groundMate = new THREE.MeshStandardMaterial({
+        color: p.background,
+        roughness: 1,
+        metalness: 0,
+        fog: true,
+    })
+    groundGeom = new THREE.PlaneGeometry(20, 20)
+    let ground = new THREE.Mesh(groundGeom, groundMate)
+    ground.position.set(0, p.floor, 0)
+    ground.rotation.x = - Math.PI / 2
+    ground.scale.set(100, 100, 100)
+    ground.castShadow = false
+    ground.receiveShadow = true
+    scene.add(ground)
+
+    // NOISE
+    noise3D = NOISE.createNoise3D()
+    const t0 = Math.random() * 10
+
+    // ANIMATE
+    const animate = () => {
+        if (showStats) stats.begin() // XXX
+
+        const t = t0 + performance.now() * p.timeSpeed
+
+        // ANIMATION
+        if (gltfLoaded && eye) {
+            // pointLight1.position.copy(eye.position)
+            // pointLight1.position.y -= .5
+            const t3 = t * p.planetSpeed + 2
+            eye.rotation.z = -0.1 + noise3D(0, t3 + 4, 0) * .8
+            eye.rotation.y = -0.1 + noise3D(0, 0, t3) * .8
+
+            eye2.rotation.z = -0.1 + noise3D(0, t3 + 7, 0) * .5
+            eye2.rotation.y = -0.1 + noise3D(0, 0, t3 + 22) * .5
+
+            eye3.rotation.z = -0.1 + noise3D(0, t3 + 9, 0) * .3
+            eye3.rotation.y = -0.1 + noise3D(0, 0, t3 + 12) * .3
+        }
+
+
+        controls.update()
+        renderer.render(scene, camera) // RENDER
+        composer.render() // POST-PROCESSING
+        if (showStats) stats.end() // XXX
+
+        animation = requestAnimationFrame(animate) // CIAK
+    }
+    animate()
+}
+
+export function dispose() {
+    cancelAnimationFrame(animation)
+    controls?.dispose()
+    geometry?.dispose()
+    material?.dispose()
+    material2?.dispose()
+    noise3D = null
+    composer?.dispose()
+    renderPass?.dispose()
+    bloomPass?.dispose()
+    window.removeEventListener('resize', onWindowResize)
+}

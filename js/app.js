@@ -350,6 +350,7 @@ loadCubeTexture('PureSky', './assets/textures/cube/cloud/', '.png') // 2
 // global.textures[n]
 loadTexture('StoneDiff', './assets/textures/stone_tiles_02_diff_1k', '.jpg') // 0
 // loadTexture('luna_1k_diff', './assets/textures/luna_1k', '.png') // 1
+loadTexture('eye', './assets/eye/textures/01___Default_baseColor1', '.jpeg') // 1 XXX
 
 
 /// ...
