@@ -4,38 +4,43 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 let scene, animation, onWindowResize, controls, onMouseMove
 let groundGeom
-let groundMate, clothMaterial, mirrorMate
+let groundMate, lanceMate, fireFlyMate
 let world
 let noise3D
-let cloth, clothParticles, constraints = []
 let flowField
 
 export function sketch() {
 
-    let mouse = new THREE.Vector2()
-    onMouseMove = (event) => {
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
-    };
-    window.addEventListener('mousemove', onMouseMove);
+    // let mouse = new THREE.Vector2()
+    // onMouseMove = (event) => {
+    //     mouse.x = (event.clientX / window.innerWidth) * 2 - 1
+    //     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+    // };
+    // window.addEventListener('mousemove', onMouseMove);
 
     const p = {
-        // cloth
-        clothWidth: 10,
-        clothHeight: 10,
-        clothResolution: 22,
+        // lance
+        lanceLength: 1 + Math.random() * 3,
+        baseDiam: .05,
+        topDiam: .01,
+        numRows: 1 + Math.random() * 10,
+        numCols: 1 + Math.random() * 10,
+        spacing: .5 + Math.random() * .7,
+        spacingVariability: 0, //.3 + Math.random() * 3,
+        lanceMass: 1,
         // view
-        lookAtCenter: new THREE.Vector3(0, 2, 0),
-        cameraPosition: new THREE.Vector3(-1 + Math.random() * 2, -0.6, - 10 - Math.random()* 2),
+        lookAtCenter: new THREE.Vector3(0, .1, 0),
+        cameraPosition: new THREE.Vector3(0, -0.9,-1),
         autoRotate: true,
-        autoRotateSpeed: -.1 + Math.random() * .1,
+        autoRotateSpeed: -.1 + Math.random() * .2,
         camera: 35,
+        // fireflies
+        fireFlySpeed: .1,
         // world
         background: new THREE.Color(0x000000),
-        clothMass: 1,
-        gravity: 40,
+        gravity: 10,
         wind: true,
-        windStrength: .1 + Math.random(),
+        windStrength: .3,
         floor: -1,
     };
 
@@ -64,6 +69,7 @@ export function sketch() {
     world = new CANNON.World({
         gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
+    // world.broadphase = new CANNON.NaiveBroadphase();
     world.solver.iterations = 10
 
     // MATERIALS
@@ -72,18 +78,26 @@ export function sketch() {
         roughness: .7,
         metalness: .3,
         fog: true,
-        
+
     })
-    mirrorMate = new THREE.MeshPhongMaterial({
+    fireFlyMate = new THREE.MeshStandardMaterial({
+        color: 0xFFC702,
+        emissive: 0xFFC702,
+        roughness: 1,
+        metalness: 0,
+        fog: false,
+
+    })
+    lanceMate = new THREE.MeshPhongMaterial({
         color: 0x999999,
         envMap: cubeTextures[0].texture,
-        emissive: 0xffffff,
+        // emissive: 0xffffff,
         // side: THREE.DoubleSide,
         // combine: THREE.addOperation,
-        reflectivity: .3,
+        // reflectivity: .3,
         // flatShading: true,
-        shininess: 100,
-        specular: 0xffffff,
+        // shininess: 100,
+        // specular: 0xffffff,
         fog: true
     })
 
@@ -97,10 +111,11 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
     const groundBody = new CANNON.Body({
-        position: new CANNON.Vec3(0, p.floor - 1, 0),
+        position: new CANNON.Vec3(0, p.floor - 0.1, 0),
         mass: 0,
         shape: new CANNON.Plane(),
     });
+    // xxx body has a bug with point lance point constraints... 
     // groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
     // groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
     // world.addBody(groundBody);
@@ -119,19 +134,21 @@ export function sketch() {
     controls.autoRotate = p.autoRotate;
     controls.autoRotateSpeed = p.autoRotateSpeed;
     controls.target = p.lookAtCenter;
-    
-    // FORESTA
-    const treeLength = 4
-    const lanceGeometry = new THREE.CylinderGeometry(0.01, 0.05, treeLength, 16);
-    const numRows = 1 + Math.random() * 5;
-    const numCols = 1 + Math.random() * 5;
-    const spacing = .3 + Math.random() * .7;
-    const spacingVariability = 1;
+
+    // FOREST
+    const lanceLength = p.lanceLength // 5
+    const numRows = p.numRows // 3 + Math.random() * 5;
+    const numCols = p.numCols // 3 + Math.random() * 5;
+    const spacing = p.spacing // .3 + Math.random() * .7;
+    const spacingVariability = p.spacingVariability // .5;
+    const baseDiam = p.baseDiam
+    const topDiam = p.topDiam
+    const lanceGeometry = new THREE.CylinderGeometry(topDiam, baseDiam, lanceLength, 16);
     const lances = [];
 
     for (let i = 0; i < numRows; i++) {
         for (let j = 0; j < numCols; j++) {
-            const lance = new THREE.Mesh(lanceGeometry, mirrorMate);
+            const lance = new THREE.Mesh(lanceGeometry, lanceMate);
             lance.castShadow = true;
             lance.position.set(
                 (j - (numCols - 1) / 2) * spacing - (Math.random() * spacing / 2 * spacingVariability),
@@ -140,8 +157,8 @@ export function sketch() {
             );
             scene.add(lance);
 
-            const lanceShape = new CANNON.Cylinder(0.01, 0.05, treeLength, 8);
-            const lanceBody = new CANNON.Body({ mass: 1 });
+            const lanceShape = new CANNON.Cylinder(0.01, 0.05, lanceLength, 8);
+            const lanceBody = new CANNON.Body({ mass: p.lanceMass });
             lanceBody.addShape(lanceShape);
             lanceBody.position.copy(lance.position);
             world.addBody(lanceBody);
@@ -152,12 +169,19 @@ export function sketch() {
             world.addBody(anchorBody);
 
             // Aggiungi un vincolo a cerniera tra la base della lancia e l'ancoraggio al terreno
-            const constraint = new CANNON.HingeConstraint(lanceBody, anchorBody, {
-                pivotA: new CANNON.Vec3(0, - treeLength / 2, 0),
-                pivotB: new CANNON.Vec3(0, 0, 0),
-                axisA: new CANNON.Vec3(1, 0, 0),
-                axisB: new CANNON.Vec3(0, 0, 1),
-            });
+            // const constraint = new CANNON.HingeConstraint(lanceBody, anchorBody, {
+            //     pivotA: new CANNON.Vec3(0, - lanceLength / 2, 0),
+            //     pivotB: new CANNON.Vec3(0, 0, 0),
+            //     axisA: new CANNON.Vec3(1, 0, 0),
+            //     axisB: new CANNON.Vec3(0, 0, 1),
+            // });
+            // Aggiungi il vincolo tra il cilindro e il corpo fisso
+            const constraint = new CANNON.PointToPointConstraint(
+                lanceBody,
+                new CANNON.Vec3(0, - lanceLength / 2, 0),
+                anchorBody,
+                new CANNON.Vec3(0, 0, 0),
+            )
             world.addConstraint(constraint);
 
             lances.push({ mesh: lance, body: lanceBody });
@@ -172,11 +196,20 @@ export function sketch() {
         }
     }
 
-    const light = new THREE.DirectionalLight(0xffffff, 4)
+    // FIREFLIES
+    const fireFlyGeom = new THREE.SphereGeometry(.005, 3, 2)
+    const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate)
+    const fireFlyLight = new THREE.PointLight(0xFFC702, 7, 4); // Luce direzionale con intensità 2
+    fireFlyLight.castShadow = true; // Abilita la creazione di ombre
+    scene.add(fireFlyLight);
+    scene.add(fireFly)
+    
+    // LIGHTS
+    const light = new THREE.DirectionalLight(0xffffff, .5)
     light.position.set(10, 20, -20)
     light.target.position.set(0, 0, 0)
     light.castShadow = true
-    light.shadow.radius = 8
+    light.shadow.radius = 2
     light.shadow.camera.near = 2
     light.shadow.camera.far = 200
     light.shadow.bias = 0.0001
@@ -189,19 +222,18 @@ export function sketch() {
     const lightD = new THREE.DirectionalLight(0xffffff, 10)
     lightD.position.set(-4, 0, -5)
     lightD.target.position.set(0, 4, 0)
-    scene.add(lightD)
+    // scene.add(lightD)
 
     const ambientLight = new THREE.AmbientLight(0xffffff)
-    scene.add(ambientLight)
+    // scene.add(ambientLight)
 
     // NOISE
     noise3D = NOISE.createNoise3D()
     let t0 = Math.random() * 10
 
     // Parametri del flowfield
-    const flowfieldResolution = 50;
+    const flowfieldResolution = Math.floor(numRows * numCols);
     const flowfieldScale = 0.1;
-    let flowField;
 
     // Funzione per generare il flowfield utilizzando noise3D
     function generateFlowfield() {
@@ -265,14 +297,16 @@ export function sketch() {
             lastCallTime = t
 
             // CANNON SIMULATION
-
             if (p.wind) {
-
+                simulateWindWithFlowfield();
             }
-
             updateLances();
-            simulateWindWithFlowfield();
 
+            const t2 = t * p.fireFlySpeed + 10
+            fireFly.position.x = -1 + noise3D(0, t2, 0) * 2
+            fireFly.position.y = -.4 + noise3D(t2 + 4, 0, 0) * .8
+            fireFly.position.z = -1 + noise3D(0, 0, t2 + 8) * 2
+            fireFlyLight.position.copy(fireFly.position)
         }
 
         controls.update()
@@ -287,13 +321,12 @@ export function sketch() {
 export function dispose() {
     cancelAnimationFrame(animation)
     controls?.dispose()
-    clothMaterial?.dispose()
-    mirrorMate?.dispose()
+    lanceMate?.dispose()
     groundGeom?.dispose()
     groundMate?.dispose()
     world = null
     noise3D = null
     flowField = null
     window?.removeEventListener('resize', onWindowResize)
-    window?.removeEventListener('mousemove', onMouseMove)
+    // window?.removeEventListener('mousemove', onMouseMove)
 }

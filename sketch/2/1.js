@@ -118,7 +118,7 @@ export function sketch() {
 
     loaderGLTF = new GLTFLoader()
     loaderGLTF.load(
-        './assets/eye/scene.gltf',
+        './assets/models/eye/scene.gltf',
         (gltf) => {
 
             gltfLoaded = true
