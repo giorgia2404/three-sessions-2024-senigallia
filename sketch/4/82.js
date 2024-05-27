@@ -1,8 +1,6 @@
-// TEST CLOTH + 3D MODEL
+//TEST CLOTH + 3D MODEL
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import * as CANNON from 'cannon-es';
 
 let scene, animation, onWindowResize, controls, onMouseMove;
 let groundGeom;
@@ -11,7 +9,7 @@ let world;
 let noise3D;
 let cloth, clothParticles, constraints = [];
 let flowField;
-let modelBody; // Variabile per il corpo fisico del modello
+let startTime;  // Variabile per tenere traccia dell'inizio dell'animazione
 
 export function sketch() {
 
@@ -29,16 +27,16 @@ export function sketch() {
         clothResolution: 20,
         // view
         lookAtCenter: new THREE.Vector3(0, 5, 3),
-        cameraPosition: new THREE.Vector3(0, 1, - 7 - Math.random() * 25),
+        cameraPosition: new THREE.Vector3(0, -2, - 7 - Math.random() * 25),
         autoRotate: false,
         autoRotateSpeed: -1 + Math.random() * 2,
         camera: 35,
         // world
         background: new THREE.Color(0x000000),
-        clothMass: 1,
-        gravity: -10,
-        wind: false,
-        windStrength: 2 + Math.random() * .5,
+        clothMass: 3,
+        gravity: 1,
+        wind: true,
+        windStrength: 1 + Math.random() * 8,
         floor: -2,
     };
 
@@ -121,11 +119,7 @@ export function sketch() {
         envMap: cubeTextures[0].texture,
         side: THREE.DoubleSide,
         flatShading: true,
-        // combine: THREE.addOperation,
-        // reflectivity: 0,
-        // specular: 0x999999,
-        // fog: true
-    })
+    });
 
     cloth = new THREE.Mesh(clothGeometry, mirrorMate);
     cloth.castShadow = true;
@@ -148,19 +142,18 @@ export function sketch() {
     for (let x = 0; x <= Nx; x++) {
         clothParticles.push([]);
         for (let y = 0; y <= Ny; y++) {
-
             const hangingPosition = new CANNON.Vec3(
                 (x - Nx * 0.5) * restDistanceX,
-                p.floor + cHeight + 4,
+                p.floor,
                 (y - Ny * 0.5) * restDistanceY
             );
 
             const particle = new CANNON.Body({
-                mass: y >= Ny - 2 && x >= Nx - 2 || y >= Ny - 2 && x <= 2 ? 0 : mass, // arms
+                mass: mass,
                 position: hangingPosition,
                 shape: new CANNON.Particle(),
                 velocity: new CANNON.Vec3(0, 0, 0),
-                linearDamping: 0.5
+                linearDamping: 0.5,
             });
 
             clothParticles[x].push(particle);
@@ -181,6 +174,40 @@ export function sketch() {
             }
         }
     }
+
+    // Aggiungi le corde elastiche
+    const anchorDistance = 0;
+    const anchorPoints = [
+        new CANNON.Vec3(-cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
+        new CANNON.Vec3(cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
+        new CANNON.Vec3(cWidth / 2, p.floor + anchorDistance, cHeight / 2),
+        new CANNON.Vec3(-cWidth / 2, p.floor + anchorDistance, cHeight / 2),
+    ];
+
+    const anchorBodies = [];
+    anchorPoints.forEach((point) => {
+        const anchorBody = new CANNON.Body({
+            mass: 0,
+            position: point,
+            shape: new CANNON.Particle(),
+        });
+        anchorBodies.push(anchorBody);
+        world.addBody(anchorBody);
+    });
+
+    // const cornerParticles = [
+    //     clothParticles[0][0],
+    //     clothParticles[Nx][0],
+    //     clothParticles[Nx][Ny],
+    //     clothParticles[0][Ny],
+    // ];
+
+    // cornerParticles.forEach((particle, index) => {
+    //     const anchorBody = anchorBodies[index];
+    //     const constraint = new CANNON.DistanceConstraint(particle, anchorBody, anchorDistance);
+    //     world.addConstraint(constraint);
+    //     constraints.push(constraint);
+    // });
 
     // Initialize the vertices of the cloth
     const vertices = [];
@@ -223,7 +250,7 @@ export function sketch() {
     flowField = createFlowField(flowFieldSize, 0); // Inizializzazione del flowfield
     function createFlowField(size, offsetSpeed) {
         const flowField = [];
-        const noiseFreq = 0.1; // Frequenza del rumore per il flowfield
+        const noiseFreq = 0.1;
 
         for (let y = 0; y < size; y++) {
             const row = [];
@@ -231,9 +258,9 @@ export function sketch() {
                 const noiseX = noise3D(x * noiseFreq, offsetSpeed, y * noiseFreq);
                 const noiseY = noise3D(x * noiseFreq, y * noiseFreq, offsetSpeed);
 
-                const windDirection = new THREE.Vector3(-mouse.x, -mouse.y, 0).normalize();
+                const windDirection = new THREE.Vector3(0, 1, 0).normalize(); // Direzione del vento verso l'alto
                 const windIntensity = Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
-                const vector = new THREE.Vector3(-mouse.x + noiseX, 0, -mouse.y + noiseY).normalize().multiplyScalar(p.windStrength + windIntensity * 2);
+                const vector = new THREE.Vector3(noiseX, 1 + noiseY, 0).normalize().multiplyScalar(p.windStrength + windIntensity * 2);
 
                 row.push(vector);
             }
@@ -243,59 +270,29 @@ export function sketch() {
         return flowField;
     }
 
-    // UPLOAD 3D MODEL
-    const loader = new GLTFLoader();
-    loader.load('./assets/models/cloth/low_poly_face.glb', (gltf) => {
-        const model = gltf.scene;
-        model.position.set(0, p.floor + 6, 3); 
-        model.scale.set(8.02, 8.02, 8.02); 
-        scene.add(model);
-
-       //HIDE 3D MODEL
-        model.visible = false;
-
-        // Creazione del corpo fisico per il modello usando sfere
-        const sphereRadius = 1.5;
-        const spherePositions = [
-            new CANNON.Vec3(0, 0, 0),
-            new CANNON.Vec3(0, 1, -0.4),
-            new CANNON.Vec3(0, 2, 0),
-            new CANNON.Vec3(0.7, 1.7, 0),
-            new CANNON.Vec3(-0.7, 1.7, 0),
-            new CANNON.Vec3(0, 3, 0),
-            new CANNON.Vec3(0, 4, 3),
-            
-        ];
-
-        modelBody = new CANNON.Body({
-            mass: 0, 
-        });
-
-        spherePositions.forEach((pos) => {
-            const sphereShape = new CANNON.Sphere(sphereRadius);
-            modelBody.addShape(sphereShape, pos);
-        });
-
-        modelBody.position.copy(model.position);
-        world.addBody(modelBody);
-
-        // Sincronizzazione del corpo fisico con il modello grafico
-        model.userData.physicsBody = modelBody;
-    }, undefined, (error) => {
-        console.error(error);
-    });
-
     // ANIMATE
     const timeStep = 1 / 60;
     const stepsPerFrame = 2;
     let lastCallTime;
+
+    startTime = performance.now(); // Imposta l'orario di inizio dell'animazione
 
     const animate = () => {
         if (showStats) stats.begin();
 
         // ANIMATION
         if (!paused) {
+
             const t = performance.now() / 1000;
+
+            // Interpolazione della gravità da 1 a -5 in due secondi
+            const elapsedTime = performance.now() - startTime;
+            if (elapsedTime < 2000) {
+                const newGravity = 2 + (elapsedTime / 2000) * (-6); // Interpolazione lineare
+                world.gravity.set(0, newGravity, 0);
+            } else {
+                world.gravity.set(0, -5, 0); // Imposta la gravità finale
+            }
 
             if (!lastCallTime) {
                 for (let i = 0; i < stepsPerFrame; i++) {
@@ -311,21 +308,17 @@ export function sketch() {
             lastCallTime = t;
 
             // CANNON SIMULATION
-
             if (p.wind) {
-                const t1 = t * 1.0; // speed
-                // Aggiorna il flowfield
-                flowField = createFlowField(flowFieldSize, t1 * 0.1); // Regola la velocità di animazione del flowfield
+                const t1 = t * 1.0;
+                flowField = createFlowField(flowFieldSize, t1 * 0.1);
 
                 for (let x = 0; x <= Nx; x++) {
                     for (let y = 0; y <= Ny; y++) {
                         const particle = clothParticles[x][y];
 
-                        // Ottieni il vettore del flusso dalla griglia del flowfield
                         let gridX = Math.floor((particle.position.x + cWidth / 2) / cWidth * flowFieldSize);
                         let gridY = Math.floor((particle.position.z + cHeight / 2) / cHeight * flowFieldSize);
 
-                        // Confinare gridX e gridY nei limiti dell'array flowField
                         gridX = Math.max(0, Math.min(flowFieldSize - 1, gridX));
                         gridY = Math.max(0, Math.min(flowFieldSize - 1, gridY));
                         const windForce = flowField[gridY][gridX].clone();
@@ -334,7 +327,6 @@ export function sketch() {
                     }
                 }
             }
-
             const positions = cloth.geometry.attributes.position.array;
             for (let x = 0; x <= Nx; x++) {
                 for (let y = 0; y <= Ny; y++) {
@@ -347,14 +339,6 @@ export function sketch() {
             }
             cloth.geometry.attributes.position.needsUpdate = true;
         }
-
-        // Sincronizzazione della posizione e della rotazione del modello grafico con il corpo fisico
-        scene.traverse((object) => {
-            if (object.userData.physicsBody) {
-                object.position.copy(object.userData.physicsBody.position);
-                object.quaternion.copy(object.userData.physicsBody.quaternion);
-            }
-        });
 
         controls.update();
         renderer.render(scene, camera);
