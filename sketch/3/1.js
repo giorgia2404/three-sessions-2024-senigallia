@@ -26,9 +26,9 @@ export function sketch() {
         clothResolution: 22,
         // view
         lookAtCenter: new THREE.Vector3(0, 2, 0),
-        cameraPosition: new THREE.Vector3(Math.random() * 4, 0.2, - 10 - Math.random()* 4),
+        cameraPosition: new THREE.Vector3(Math.random() * 4, -0.6, - 10 - Math.random()* 4),
         autoRotate: true,
-        autoRotateSpeed: -1 + Math.random() * 2,
+        autoRotateSpeed: -.1 + Math.random() * .1,
         camera: 35,
         // world
         background: new THREE.Color(0x000000),
@@ -108,17 +108,24 @@ export function sketch() {
     controls.target = p.lookAtCenter;
 
     mirrorMate = new THREE.MeshPhongMaterial({
-        color: 0x999999,
-        roughness: .5,
-        metalness: .5,
-        fog: true,
+        color: 0xffffff,
+        // map: textures[1].texture,
+        envMap: cubeTextures[2].texture,
+        // side: THREE.DoubleSide,
+        combine: THREE.addOperation,
+        reflectivity: .5,
+        // flatShading: true,
+        shininess: 100,
+        // specular: 0x999999,
+        fog: true
     })
+    
     // FORESTA
     const treeLength = 4
-    const lanceGeometry = new THREE.CylinderGeometry(0.01, 0.05, treeLength, 8);
+    const lanceGeometry = new THREE.CylinderGeometry(0.01, 0.05, treeLength, 16);
     const numRows = 5 + Math.random() * 5;
     const numCols = 5 + Math.random() * 5;
-    const spacing = .5 + Math.random();
+    const spacing = .5 + Math.random() * .5;
     const lances = [];
 
     for (let i = 0; i < numRows; i++) {
@@ -176,11 +183,11 @@ export function sketch() {
     light.shadow.mapSize.height = shadowMapHeight
     scene.add(light)
     const lightHelper = new THREE.DirectionalLightHelper(light, 5);
-    // scene.add(lightHelper);
+    scene.add(lightHelper);
 
-    const lightD = new THREE.DirectionalLight(0xffffff, 3)
-    lightD.position.set(2, 0, -5)
-    lightD.target.position.set(0, 2, 10)
+    const lightD = new THREE.DirectionalLight(0xffffff, 10)
+    lightD.position.set(-4, 0, -5)
+    lightD.target.position.set(0, 4, 0)
     scene.add(lightD)
 
     const ambientLight = new THREE.AmbientLight(0xffffff)
@@ -191,7 +198,7 @@ export function sketch() {
     let t0 = Math.random() * 10
 
     // Parametri del flowfield
-    const flowfieldResolution = 25;
+    const flowfieldResolution = 50;
     const flowfieldScale = 0.1;
     let flowField;
 
