@@ -26,14 +26,14 @@ export function sketch() {
         clothResolution: 22,
         // view
         lookAtCenter: new THREE.Vector3(0, 2, 0),
-        cameraPosition: new THREE.Vector3(Math.random() * 4, -0.6, - 10 - Math.random()* 4),
+        cameraPosition: new THREE.Vector3(-1 + Math.random() * 2, -0.6, - 10 - Math.random()* 2),
         autoRotate: true,
         autoRotateSpeed: -.1 + Math.random() * .1,
         camera: 35,
         // world
         background: new THREE.Color(0x000000),
         clothMass: 1,
-        gravity: 30,
+        gravity: 40,
         wind: true,
         windStrength: .1 + Math.random(),
         floor: -1,
@@ -68,10 +68,23 @@ export function sketch() {
 
     // MATERIALS
     groundMate = new THREE.MeshStandardMaterial({
-        color: p.background,
-        roughness: 1,
-        metalness: 0,
+        color: 0x333333,
+        roughness: .7,
+        metalness: .3,
         fog: true,
+        
+    })
+    mirrorMate = new THREE.MeshPhongMaterial({
+        color: 0x999999,
+        envMap: cubeTextures[0].texture,
+        emissive: 0xffffff,
+        // side: THREE.DoubleSide,
+        // combine: THREE.addOperation,
+        reflectivity: .3,
+        // flatShading: true,
+        shininess: 100,
+        specular: 0xffffff,
+        fog: true
     })
 
     // Static ground plane
@@ -106,26 +119,14 @@ export function sketch() {
     controls.autoRotate = p.autoRotate;
     controls.autoRotateSpeed = p.autoRotateSpeed;
     controls.target = p.lookAtCenter;
-
-    mirrorMate = new THREE.MeshPhongMaterial({
-        color: 0xffffff,
-        // map: textures[1].texture,
-        envMap: cubeTextures[2].texture,
-        // side: THREE.DoubleSide,
-        combine: THREE.addOperation,
-        reflectivity: .5,
-        // flatShading: true,
-        shininess: 100,
-        // specular: 0x999999,
-        fog: true
-    })
     
     // FORESTA
     const treeLength = 4
     const lanceGeometry = new THREE.CylinderGeometry(0.01, 0.05, treeLength, 16);
-    const numRows = 5 + Math.random() * 5;
-    const numCols = 5 + Math.random() * 5;
-    const spacing = .5 + Math.random() * .5;
+    const numRows = 1 + Math.random() * 5;
+    const numCols = 1 + Math.random() * 5;
+    const spacing = .3 + Math.random() * .7;
+    const spacingVariability = 1;
     const lances = [];
 
     for (let i = 0; i < numRows; i++) {
@@ -133,9 +134,9 @@ export function sketch() {
             const lance = new THREE.Mesh(lanceGeometry, mirrorMate);
             lance.castShadow = true;
             lance.position.set(
-                (j - (numCols - 1) / 2) * spacing - Math.random() * spacing / 2,
+                (j - (numCols - 1) / 2) * spacing - (Math.random() * spacing / 2 * spacingVariability),
                 p.floor,
-                (i - (numRows - 1) / 2) * spacing + Math.random() * spacing / 2
+                (i - (numRows - 1) / 2) * spacing + (Math.random() * spacing / 2 * spacingVariability)
             );
             scene.add(lance);
 
@@ -183,7 +184,7 @@ export function sketch() {
     light.shadow.mapSize.height = shadowMapHeight
     scene.add(light)
     const lightHelper = new THREE.DirectionalLightHelper(light, 5);
-    scene.add(lightHelper);
+    // scene.add(lightHelper);
 
     const lightD = new THREE.DirectionalLight(0xffffff, 10)
     lightD.position.set(-4, 0, -5)
