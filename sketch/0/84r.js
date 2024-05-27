@@ -21,8 +21,9 @@ export function sketch() {
     // PARAMETERS
     const p = {
         // colors
-        availableColorsHighlights: [0xffffff, 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff],
-        availableColors: [0xffffff, 0xcc0000, 0x00cc00, 0x0000cc, 0xcccc00, 0x00cccc, 0xcc00cc],
+        availableColorsHighlights: [0x532B5F, 0x9eddec, 0x00ff00,  0xffffff, 0xFFC702, 0x0140A6,  0xFED374, 0xFACDA4,0xE33117, 0x92BE23, 0x1E841E, 0x232323],
+        availableColors: [0x532B5F, 0x9eddec, 0x00ff00,  0xffffff, 0xFFC702, 0x0140A6,  0xFED374, 0xFACDA4,0xE33117, 0x92BE23, 0x1E841E, 0x232323],
+
         // objects
         lightSpeed: 1,
         // ...
@@ -94,6 +95,9 @@ export function sketch() {
         fog: true,
     })
 
+    const neonmaterial = new THREE.MeshPhongMaterial({ color: p.background, emissive: p.background, emissiveIntensity: 4,
+        shininess: 500});
+
 
     // GEOMETRIES
     // let's make a ground
@@ -107,8 +111,6 @@ export function sketch() {
     scene.add(ground)
 
     const neongeometry = new THREE.SphereGeometry(4, 32, 32);
-    const neonmaterial = new THREE.MeshPhongMaterial({ color: p.background, emissive: p.background,
-        shininess: 200});
     const lightsphere = new THREE.Mesh(neongeometry, neonmaterial);
     
     lightsphere.position.y = 6
