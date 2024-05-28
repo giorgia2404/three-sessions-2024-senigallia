@@ -23,6 +23,9 @@ export function sketch() {
         spacing: .2 + Math.random() * .7,
         spacingVariability: Math.random(),
         lanceMass: 1,
+        // unit transformation
+        mic: true,
+        micSensitivity: .1,
         // view
         lookAtCenter: new THREE.Vector3(0, 0, 0),
         cameraPosition: new THREE.Vector3(0, -0.9, - 3 - Math.random() * 2),
@@ -88,9 +91,8 @@ export function sketch() {
         roughness: 1,
         metalness: 0,
         fog: true,
+        opacity: .5,
         transparent: true,
-        opacity: .5
-
     })
     fireFlyMate = new THREE.MeshStandardMaterial({
         color: 0xFFC702,
@@ -196,13 +198,25 @@ export function sketch() {
             )
             world.addConstraint(constraint);
 
-            lances.push({ mesh: lance, body: lanceBody });
+            lances.push({ mesh: lance, body: lanceBody, anchor: anchorBody });
         }
     }
 
     // Funzione per aggiornare la posizione delle lance
     function updateLances() {
         for (const lance of lances) {
+            const pointVolScale = MIC.getHighsVol(.3, 1)
+            // const pointVol = MIC.mapSound(i / 3, numParticles, p.pointGroundY, p.pointMaxY)
+            lance.mesh.scale.y = pointVolScale;
+            lance.mesh.position.y = p.floor + (pointVolScale) / 2;
+            lance.mesh.updateMatrix();
+
+            lance.body.shapes[0].height = lanceLength * pointVolScale;
+            lance.body.position.y = p.floor + lanceLength * pointVolScale / 2;
+            lance.body.shapes[0].updateBoundingSphereRadius();
+
+            lance.anchor.position.y = p.floor;
+
             lance.mesh.position.copy(lance.body.position);
             lance.mesh.quaternion.copy(lance.body.quaternion);
         }
@@ -249,7 +263,7 @@ export function sketch() {
     // Parametri del flowfield
     let num
     if (numRows >= numCols) num = numRows
-    else num = numCols 
+    else num = numCols
     const flowfieldResolution = Math.floor(num);
     const flowfieldScale = 0.1;
 
@@ -279,9 +293,9 @@ export function sketch() {
 
             // Verifica che gli indici siano all'interno dei limiti del flowfield
             // if (cellX >= 0 && cellX < flowfieldResolution && cellZ >= 0 && cellZ < flowfieldResolution) {
-                const windDirection = flowField[cellX][cellZ];
-                const windForce = windDirection.scale(windStrength);
-                lance.body.applyForce(windForce, new CANNON.Vec3(0, 1, 0));
+            const windDirection = flowField[cellX][cellZ];
+            const windForce = windDirection.scale(windStrength);
+            lance.body.applyForce(windForce, new CANNON.Vec3(0, 1, 0));
             // }
         }
     }
