@@ -343,13 +343,16 @@ const loadTexture = (name, path, format) => {
 // Let's preload our textures
 // global.cubeTextures[n]
 loadCubeTexture('PureSky', './assets/textures/cube/PureSky-256/', '.png') // 0
-loadCubeTexture('PureSky', './assets/textures/cube/AbandonedParking-1024/', '.png') // 1
-loadCubeTexture('PureSky', './assets/textures/cube/cloud/', '.png') // 2
-//loadCubeTexture('luna_texture_disp_1k', './assets/textures/luna_texture_disp_1k_', '.jpg') // 3
+loadCubeTexture('AbandonedParking', './assets/textures/cube/AbandonedParking-1024/', '.png') // 1
+loadCubeTexture('cloud', './assets/textures/cube/cloud/', '.png') // 2
+loadCubeTexture('TropicalSunnyDay', './assets/textures/cube/TropicalSunnyDay/', '.jpg') // 3
 // ...
 // global.textures[n]
-loadTexture('StoneDiff', './assets/textures/stone_tiles_02_diff_1k', '.jpg') // 0
-loadTexture('luna_1k_diff', './assets/textures/stone_tiles_02_disp_1k', '.png') // 1
+loadTexture('luna_1k_diff', './assets/textures/luna_texture_disp_1k_', '.png') // 0
+loadTexture('eye', './assets/models/eye/textures/01___Default_baseColor1', '.jpeg') // 1
+loadTexture('luna_1k_diff', './assets/textures/luna_texture_disp_1k_', '.jpg') // 2
+loadTexture('bosco', './assets/textures/bosco4', '.exr') // 3
+loadTexture('table_mountain_2_puresky', './assets/textures/table_mountain_2_puresky_4k', '.exr') //4
 
 
 /// ...
@@ -382,11 +385,13 @@ const randomSketch = () => {
 	/* 
 	0 colors
 	1 mirror
- 	...
+ 	2 ...
+ 	3 landscape
+        4 cloth
 	*/
-	const sets = [0, 1] // available sets
-	const setsWeights = [0.50, 0.50] // available sets: probability weight
-	const sketches = [1, 1] // no. of available sketches for each set
+	const sets = [0, 1, 2, 3, 4] // available sets
+	const setsWeights = [0.20, 0.20, 0.20, 0.20, 0.20] // available sets: probability weight
+	const sketches = [1, 1, 1, 1, 8] // no. of available sketches for each set
 	// playSet
 	// pure random
 	// global.playSet = Math.round(Math.random() * (sets.length - 1));
@@ -397,8 +402,8 @@ const randomSketch = () => {
 	let r = Math.random() * totalWeights
 	global.playSet = sets.find((_, i) => (r -= setsWeights[i]) <= 0)
 	// playSketch
-	const playSetHowManySketches = sketches[playSet] - 2;
-	global.playSketch = 1 + Math.round(Math.random() * (playSetHowManySketches));
+	const playSetHowManySketches = sketches[playSet];
+	global.playSketch = 1 + Math.floor(Math.random() * (playSetHowManySketches));
 	// console.log(playSet, playSetHowManySketches, playSketch);
 	changeSet(global.playSet);
 	changeSketch(global.playSketch);

@@ -1,381 +1,364 @@
+//TEST CLOTH + 3D MODEL
+
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import * as dat from 'dat.gui';
 
-
-let gui;
-let controls;
-let onWindowResize;
+let scene, animation, onWindowResize, controls, onMouseMove
+let groundGeom
+let groundMate, lanceMate, fireFlyMate
+let world
+let noise3D
+let flowField
 
 export function sketch() {
-  // console.log("Sketch launched")
 
-  gui = new dat.GUI({ closed: false, width: 340 });
-  const bigWavesFolder = gui.addFolder("Large Waves");
-  const smallWavesFolder = gui.addFolder("Small Waves");
-  const colorFolder = gui.addFolder("Colors");
-  
-  const debugObject = {
-    waveDepthColor: "#1e4d40",
-    waveSurfaceColor: "#4d9aaa",
-    fogNear: 1,
-    fogFar: 3,
-    fogColor: "#A34739"
-  };
+    const p = {
+        // lights
+        night: false,
+        // lance
+        lanceLength: 1 + Math.random() * 4,
+        baseDiam: .04,
+        topDiam: 0,
+        numRows: 1 + Math.floor(Math.random() * 10),
+        numCols: 1 + Math.floor(Math.random() * 10),
+        spacing: .2 + Math.random() * .7,
+        spacingVariability: Math.random(),
+        lanceMass: 1,
+        // unit transformation
+        mic: true,
+        micSensitivity: .1,
+        // view
+        lookAtCenter: new THREE.Vector3(0, 0, 0),
+        cameraPosition: new THREE.Vector3(0, -0.9, - 3 - Math.random() * 2),
+        autoRotate: true,
+        autoRotateSpeed: -.2 + Math.random() * .4,
+        camera: 35,
+        // fireflies
+        fireFlySpeed: .1,
+        // world
+        background: new THREE.Color(0x000000),
+        gravity: 20,
+        wind: true,
+        windStrength: .1 + Math.random() * .2,
+        floor: -1,
+    };
 
+    //debug random night/day xxx
+    if (Math.random() > .5) p.night = true
 
-  // SCENE
-  const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(
-    debugObject.fogColor,
-    debugObject.fogNear,
-    debugObject.fogFar
-  );
-  scene.background = new THREE.Color(debugObject.fogColor);
-
-  const waterGeometry = new THREE.PlaneGeometry(30, 30, 512, 512);
-
-  // MATERIALE SHADER
-  const waterMaterial = new THREE.ShaderMaterial({
-    transparent: true,
-    fog: true,
-    uniforms: {
-      uTime: { value: 0 },
-      uMouse: { value: new THREE.Vector2() },
-      uBigWavesElevation: { value: 0.2 },
-      uBigWavesFrequency: { value: new THREE.Vector2(4, 2) },
-      uBigWaveSpeed: { value: 0.75 },
-      // Small Waves
-      uSmallWavesElevation: { value: 0.15 },
-      uSmallWavesFrequency: { value: 3 },
-      uSmallWavesSpeed: { value: 0.2 },
-      uSmallWavesIterations: { value: 4 },
-      // Color
-      uDepthColor: { value: new THREE.Color(debugObject.waveDepthColor) },
-      uSurfaceColor: { value: new THREE.Color(debugObject.waveSurfaceColor) },
-      uColorOffset: { value: 0.08 },
-      uColorMultiplier: { value: 5 },
-
-      // Fog, contains fogColor, fogDensity, fogFar and fogNear
-      ...THREE.UniformsLib["fog"]
-    },
-
-    vertexShader: `#include <fog_pars_vertex>
-    uniform float uTime;
-    uniform float uBigWavesElevation;
-    uniform vec2 uBigWavesFrequency;
-    uniform float uBigWaveSpeed;
-    uniform float uSmallWavesElevation;
-    uniform float uSmallWavesFrequency;
-    uniform float uSmallWavesSpeed;
-    uniform float uSmallWavesIterations;
-    varying float vElevation;
-    vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
-    vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
-    vec3 fade(vec3 t) {return t*t*t*(t*(t*6.0-15.0)+10.0);}
-    float cnoise(vec3 P){
-      vec3 Pi0 = floor(P);
-      vec3 Pi1 = Pi0 + vec3(1.0);
-      Pi0 = mod(Pi0, 289.0);
-      Pi1 = mod(Pi1, 289.0);
-      vec3 Pf0 = fract(P);
-      vec3 Pf1 = Pf0 - vec3(1.0);
-      vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
-      vec4 iy = vec4(Pi0.yy, Pi1.yy);
-      vec4 iz0 = Pi0.zzzz;
-      vec4 iz1 = Pi1.zzzz;
-      vec4 ixy = permute(permute(ix) + iy);
-      vec4 ixy0 = permute(ixy + iz0);
-      vec4 ixy1 = permute(ixy + iz1);
-      vec4 gx0 = ixy0 / 7.0;
-      vec4 gy0 = fract(floor(gx0) / 7.0) - 0.5;
-      gx0 = fract(gx0);
-      vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
-      vec4 sz0 = step(gz0, vec4(0.0));
-      gx0 -= sz0 * (step(0.0, gx0) - 0.5);
-      gy0 -= sz0 * (step(0.0, gy0) - 0.5);
-      vec4 gx1 = ixy1 / 7.0;
-      vec4 gy1 = fract(floor(gx1) / 7.0) - 0.5;
-      gx1 = fract(gx1);
-      vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
-      vec4 sz1 = step(gz1, vec4(0.0));
-      gx1 -= sz1 * (step(0.0, gx1) - 0.5);
-      gy1 -= sz1 * (step(0.0, gy1) - 0.5);
-      vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
-      vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
-      vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
-      vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
-      vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
-      vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
-      vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
-      vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
-      vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
-      g000 *= norm0.x;
-      g010 *= norm0.y;
-      g100 *= norm0.z;
-      g110 *= norm0.w;
-      vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
-      g001 *= norm1.x;
-      g011 *= norm1.y;
-      g101 *= norm1.z;
-      g111 *= norm1.w;
-      float n000 = dot(g000, Pf0);
-      float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
-      float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
-      float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
-      float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
-      float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
-      float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
-      float n111 = dot(g111, Pf1);
-      vec3 fade_xyz = fade(Pf0);
-      vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
-      vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
-      float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
-      return 2.2 * n_xyz;
+    let lanceColor
+    let groundColor
+    if (!p.night) {
+        p.background = new THREE.Color(0xaaaaaa)
+        lanceColor = new THREE.Color(0x000000)
+        groundColor = new THREE.Color(0x333333)
+    } else {
+        p.background = new THREE.Color(0x000000)
+        lanceColor = new THREE.Color(0xcccccc)
+        groundColor = new THREE.Color(0x666666)
     }
-    
-    void main()
-    {
-        vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-    
-        // Grandi onde
-        float elevation = sin(modelPosition.x * uBigWavesFrequency.x + uTime * uBigWaveSpeed)
-                        * sin(modelPosition.z * uBigWavesFrequency.y + uTime * uBigWaveSpeed)
-                        * uBigWavesElevation;
-    
-        // Piccole onde
-        for(float i = 1.0; i <= 10.0; i++)
-        {
-            elevation -= abs(cnoise(
-                vec3(modelPosition.xz * uSmallWavesFrequency * i, uTime * uSmallWavesSpeed)
-            ) * uSmallWavesElevation / i);
-        }
-    
-        modelPosition.y += elevation;
-    
-        vec4 viewPosition = viewMatrix * modelPosition;
-        vec4 projectedPosition = projectionMatrix * viewPosition;
-    
-        gl_Position = projectedPosition;
-    
-        vElevation = elevation;
-    
-        // Aggiungi mvPosition
-        vec4 mvPosition = viewPosition;
-        #include <fog_vertex>
-    }`,
-    
 
-    fragmentShader: `#include <fog_pars_fragment>
-    uniform vec3 uDepthColor;
-    uniform vec3 uSurfaceColor;
-    uniform float uColorOffset;
-    uniform float uColorMultiplier;
-    varying float vElevation;
+    // other parameters
+    let near = 0.2, far = 1000;
+    let shadowMapWidth = 2048, shadowMapHeight = 2048;
+    let paused = false;
 
-    void main()
-    {
-        float mixStrength = (vElevation + uColorOffset) * uColorMultiplier;
-        vec3 color = mix(uDepthColor, uSurfaceColor, mixStrength);
+    // CAMERA
+    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    camera.position.copy(p.cameraPosition)
+    camera.lookAt(p.lookAtCenter)
 
-        gl_FragColor = vec4(color, 1.0);
-
-        #include <fog_fragment>
-    }`,
-  });
-
-  // Mesh
-  const water = new THREE.Mesh(waterGeometry, waterMaterial);
-  water.rotation.x = -Math.PI * 0.5;
-  scene.add(water);
-
-  //LIGHT
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
-  scene.add(ambientLight);
-
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-  directionalLight.position.set(1, 0.75, 0);
-  scene.add(directionalLight);
-
-  //SIZE
-  const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
-  }; 
-
-
-  // CAMERA
-  let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.z = 5;
-
-   // WINDOW RESIZE
+    // WINDOW RESIZE
     onWindowResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-  };
-  window.addEventListener('resize', onWindowResize);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+    window.addEventListener('resize', onWindowResize);
 
-  // Controls
-  controls = new OrbitControls(camera, renderer.domElement)
-  controls.enableDamping = true;
-
-  /**
-   * Post processing */
-   
-  const renderTarget = new THREE.WebGLRenderTarget(800, 600, {
-    samples: renderer.getPixelRatio() === 1 ? 2 : 0
-  });
-
-  const effectComposer = new EffectComposer(renderer, renderTarget);
-  effectComposer.setSize(sizes.width, sizes.height);
-  effectComposer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-  const renderPass = new RenderPass(scene, camera);
-  effectComposer.addPass(renderPass);
-
-  const unrealBloomPass = new UnrealBloomPass();
-  unrealBloomPass.strength = 0.15;
-  unrealBloomPass.radius = 1;
-  unrealBloomPass.threshold = 0.1;
-  effectComposer.addPass(unrealBloomPass);
-
-  /**
-   * Animate
-   */
-  const clock = new THREE.Clock();
-
-  const tick = () => {
-    const elapsedTime = clock.getElapsedTime();
-
-    // Aggiorna il materiale dell'acqua
-    waterMaterial.uniforms.uTime.value = elapsedTime;
-
-    // Aggiorna i controlli
-    controls.update();
-
-    // Renderizza la scena
-    effectComposer.render();
-
-    // Richiedi il prossimo frame di animazione
-    requestAnimationFrame(tick);
-  };
-
-  tick();
-
-  
-  // GUI
-  bigWavesFolder
-    .add(waterMaterial.uniforms.uBigWavesElevation, "value")
-    .min(0)
-    .max(1)
-    .step(0.001)
-    .name("Elevation");
-  bigWavesFolder
-    .add(waterMaterial.uniforms.uBigWavesFrequency.value, "x")
-    .min(0)
-    .max(10)
-    .step(0.001)
-    .name("Frequency X");
-  bigWavesFolder
-    .add(waterMaterial.uniforms.uBigWavesFrequency.value, "y")
-    .min(0)
-    .max(10)
-    .step(0.001)
-    .name("Frequency Y");
-  bigWavesFolder
-    .add(waterMaterial.uniforms.uBigWaveSpeed, "value")
-    .min(0)
-    .max(4)
-    .step(0.001)
-    .name("Speed");
-  bigWavesFolder.open();
-
-  smallWavesFolder
-    .add(waterMaterial.uniforms.uSmallWavesElevation, "value")
-    .min(0)
-    .max(1)
-    .step(0.001)
-    .name("Elevation");
-  smallWavesFolder
-    .add(waterMaterial.uniforms.uSmallWavesFrequency, "value")
-    .min(0)
-    .max(30)
-    .step(0.001)
-    .name("Frequency");
-  smallWavesFolder
-    .add(waterMaterial.uniforms.uSmallWavesSpeed, "value")
-    .min(0)
-    .max(4)
-    .step(0.001)
-    .name("Speed");
-  smallWavesFolder
-    .add(waterMaterial.uniforms.uSmallWavesIterations, "value")
-    .min(0)
-    .max(5)
-    .step(1)
-    .name("Iterations");
-  smallWavesFolder.open();
-
-  colorFolder
-    .addColor(debugObject, "waveDepthColor")
-    .name("Depth Color")
-    .onChange(() => {
-      waterMaterial.uniforms.uDepthColor.value.set(debugObject.waveDepthColor);
+    // SCENE
+    scene = new THREE.Scene()
+    scene.background = p.background
+    scene.fog = new THREE.Fog(scene.background, 2, 20)
+    world = new CANNON.World({
+        gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
-  colorFolder
-    .addColor(debugObject, "waveSurfaceColor")
-    .name("Surface Color")
-    .onChange(() => {
-      waterMaterial.uniforms.uSurfaceColor.value.set(
-        debugObject.waveSurfaceColor
-      );
-    });
-  colorFolder
-    .add(waterMaterial.uniforms.uColorOffset, "value")
-    .min(0)
-    .max(1)
-    .step(0.001)
-    .name("Color Offset");
-  colorFolder
-    .add(waterMaterial.uniforms.uColorMultiplier, "value")
-    .min(0)
-    .max(10)
-    .step(0.001)
-    .name("Color Multiplier");
-  colorFolder
-    .addColor(debugObject, "fogColor")
-    .name("Fog Color")
-    .onChange(() => {
-      scene.fog.color.set(debugObject.fogColor);
-    });
-  colorFolder
-    .add(debugObject, "fogNear")
-    .min(0)
-    .max(10)
-    .step(0.01)
-    .name("Fog Near")
-    .onChange(() => {
-      scene.fog.near = debugObject.fogNear;
-    });
-  colorFolder
-    .add(debugObject, "fogFar")
-    .min(0)
-    .max(10)
-    .step(0.01)
-    .name("Fog Far")
-    .onChange(() => {
-      scene.fog.far = debugObject.fogFar;
-    });
+    // world.broadphase = new CANNON.NaiveBroadphase();
+    world.solver.iterations = 10
 
-  return {
-    destroy: () => {
-      // Pulizia quando lo sketch viene distrutto
-      gui.destroy();
-      controls.dispose();
-      renderer.dispose();
+    // MATERIALS
+    groundMate = new THREE.MeshStandardMaterial({
+        color: groundColor,
+        roughness: 1,
+        metalness: 0,
+        fog: true,
+        opacity: .5,
+        transparent: true,
+    })
+    fireFlyMate = new THREE.MeshStandardMaterial({
+        color: 0xFFC702,
+        emissive: 0xFFC702,
+        roughness: 1,
+        metalness: 0,
+        fog: false,
+
+    })
+    lanceMate = new THREE.MeshPhongMaterial({
+        color: lanceColor,
+        envMap: cubeTextures[0].texture,
+        // emissive: 0xffffff,
+        // side: THREE.DoubleSide,
+        // combine: THREE.addOperation,
+        // reflectivity: .3,
+        // flatShading: true,
+        // shininess: 100,
+        // specular: 0xffffff,
+        fog: true
+    })
+
+    // Static ground plane
+    groundGeom = new THREE.PlaneGeometry(20, 20)
+    let ground = new THREE.Mesh(groundGeom, groundMate)
+    ground.position.set(0, p.floor, 0)
+    ground.rotation.x = - Math.PI / 2
+    ground.scale.set(100, 100, 100)
+    ground.castShadow = false
+    ground.receiveShadow = true
+    scene.add(ground)
+    const groundBody = new CANNON.Body({
+        position: new CANNON.Vec3(0, p.floor - 0.1, 0),
+        mass: 0,
+        shape: new CANNON.Plane(),
+    });
+    // xxx body has a bug with point lance point constraints... 
+    // groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+    // groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+    // world.addBody(groundBody);
+    // ground.position.copy(groundBody.position);
+    // ground.quaternion.copy(groundBody.quaternion);
+
+    // CONTROLS
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 2;
+    controls.maxDistance = 6;
+    controls.maxPolarAngle = Math.PI / 2 + 0.15;
+    controls.minPolarAngle = -Math.PI;
+    controls.autoRotate = p.autoRotate;
+    controls.autoRotateSpeed = p.autoRotateSpeed;
+    controls.target = p.lookAtCenter;
+
+    // FOREST
+    const lanceLength = p.lanceLength // 5
+    const numRows = p.numRows // 3 + Math.random() * 5;
+    const numCols = p.numCols // 3 + Math.random() * 5;
+    const spacing = p.spacing // .3 + Math.random() * .7;
+    const spacingVariability = p.spacingVariability // .5;
+    const baseDiam = p.baseDiam
+    const topDiam = p.topDiam
+    const lanceGeometry = new THREE.CylinderGeometry(topDiam, baseDiam, lanceLength, 16);
+    const lances = [];
+
+    for (let i = 0; i < numRows; i++) {
+        for (let j = 0; j < numCols; j++) {
+            const lance = new THREE.Mesh(lanceGeometry, lanceMate);
+            lance.castShadow = true;
+            lance.position.set(
+                (j - (numCols - 1) / 2) * spacing - (Math.random() * spacing / 2 * spacingVariability),
+                p.floor,
+                (i - (numRows - 1) / 2) * spacing + (Math.random() * spacing / 2 * spacingVariability)
+            );
+            scene.add(lance);
+
+            const lanceShape = new CANNON.Cylinder(0.01, 0.05, lanceLength, 8);
+            const lanceBody = new CANNON.Body({ mass: p.lanceMass });
+            lanceBody.addShape(lanceShape);
+            lanceBody.position.copy(lance.position);
+            world.addBody(lanceBody);
+
+            // Crea un corpo fisico statico per l'ancoraggio al terreno
+            const anchorBody = new CANNON.Body({ mass: 0 });
+            anchorBody.position.set(lance.position.x, p.floor, lance.position.z);
+            world.addBody(anchorBody);
+
+            // Aggiungi un vincolo a cerniera tra la base della lancia e l'ancoraggio al terreno
+            // const constraint = new CANNON.HingeConstraint(lanceBody, anchorBody, {
+            //     pivotA: new CANNON.Vec3(0, - lanceLength / 2, 0),
+            //     pivotB: new CANNON.Vec3(0, 0, 0),
+            //     axisA: new CANNON.Vec3(1, 0, 0),
+            //     axisB: new CANNON.Vec3(0, 0, 1),
+            // });
+            // Aggiungi il vincolo tra il cilindro e il corpo fisso
+            const constraint = new CANNON.PointToPointConstraint(
+                lanceBody,
+                new CANNON.Vec3(0, - lanceLength / 2, 0),
+                anchorBody,
+                new CANNON.Vec3(0, 0, 0),
+            )
+            world.addConstraint(constraint);
+
+            lances.push({ mesh: lance, body: lanceBody, anchor: anchorBody });
+        }
     }
-  };
+
+    // Funzione per aggiornare la posizione delle lance
+    function updateLances() {
+        for (const lance of lances) {
+            const pointVolScale = MIC.getHighsVol(.3, 1)
+            // const pointVol = MIC.mapSound(i / 3, numParticles, p.pointGroundY, p.pointMaxY)
+            lance.mesh.scale.y = pointVolScale;
+            lance.mesh.position.y = p.floor + (pointVolScale) / 2;
+            lance.mesh.updateMatrix();
+
+            lance.body.shapes[0].height = lanceLength * pointVolScale;
+            lance.body.position.y = p.floor + lanceLength * pointVolScale / 2;
+            lance.body.shapes[0].updateBoundingSphereRadius();
+
+            lance.anchor.position.y = p.floor;
+
+            lance.mesh.position.copy(lance.body.position);
+            lance.mesh.quaternion.copy(lance.body.quaternion);
+        }
+    }
+
+    // FIREFLIES
+    const fireFlyGeom = new THREE.SphereGeometry(.005, 10, 2)
+    const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate)
+    const fireFlyLight = new THREE.PointLight(0xFFC702, 3, 2); // Luce direzionale con intensità 2
+    fireFlyLight.castShadow = true; // Abilita la creazione di ombre
+    scene.add(fireFlyLight);
+    scene.add(fireFly)
+
+    // LIGHTS
+    let lightIntensity
+    if (p.night) lightIntensity = .5
+    else lightIntensity = 4
+    const light = new THREE.DirectionalLight(0xffffff, lightIntensity)
+    light.position.set(10, 20, -20)
+    light.target.position.set(0, 0, 0)
+    light.castShadow = true
+    light.shadow.radius = 2
+    light.shadow.camera.near = 2
+    light.shadow.camera.far = 200
+    light.shadow.bias = 0.0001
+    light.shadow.mapSize.width = shadowMapWidth
+    light.shadow.mapSize.height = shadowMapHeight
+    scene.add(light)
+    const lightHelper = new THREE.DirectionalLightHelper(light, 5);
+    // scene.add(lightHelper);
+
+    const lightD = new THREE.DirectionalLight(0xffffff, 10)
+    lightD.position.set(-4, 0, -5)
+    lightD.target.position.set(0, 4, 0)
+    // scene.add(lightD)
+
+    const ambientLight = new THREE.AmbientLight(0xffffff)
+    // scene.add(ambientLight)
+
+    // NOISE
+    noise3D = NOISE.createNoise3D()
+    let t0 = Math.random() * 10
+
+    // Parametri del flowfield
+    let num
+    if (numRows >= numCols) num = numRows
+    else num = numCols
+    const flowfieldResolution = Math.floor(num);
+    const flowfieldScale = 0.1;
+
+    // Funzione per generare il flowfield utilizzando noise3D
+    function generateFlowfield() {
+        flowField = new Array(flowfieldResolution);
+
+        for (let i = 0; i < flowfieldResolution; i++) {
+            flowField[i] = new Array(flowfieldResolution);
+            for (let j = 0; j < flowfieldResolution; j++) {
+                const x = i * flowfieldScale;
+                const z = j * flowfieldScale;
+                const noise = noise3D(x, 0, z);
+                const angle = noise * Math.PI * 2;
+                flowField[i][j] = new CANNON.Vec3(Math.cos(angle), 0, Math.sin(angle));
+            }
+        }
+    }
+
+    // Funzione per simulare il vento con il flowfield
+    function simulateWindWithFlowfield() {
+        const windStrength = -p.windStrength; // Riduce l'intensità del vento
+        for (const lance of lances) {
+            const position = lance.body.position;
+            const cellX = Math.floor((position.x + 10) / 20 * flowfieldResolution);
+            const cellZ = Math.floor((position.z + 10) / 20 * flowfieldResolution);
+
+            // Verifica che gli indici siano all'interno dei limiti del flowfield
+            // if (cellX >= 0 && cellX < flowfieldResolution && cellZ >= 0 && cellZ < flowfieldResolution) {
+            const windDirection = flowField[cellX][cellZ];
+            const windForce = windDirection.scale(windStrength);
+            lance.body.applyForce(windForce, new CANNON.Vec3(0, 1, 0));
+            // }
+        }
+    }
+
+    generateFlowfield();
+
+    // ANIMATE
+    const timeStep = 1 / 60
+    const stepsPerFrame = 1
+    let lastCallTime
+
+    const animate = () => {
+        if (showStats) stats.begin();
+
+        // ANIMATION
+        if (!paused) {
+
+            const t = performance.now() / 1000
+
+            if (!lastCallTime) {
+                for (let i = 0; i < stepsPerFrame; i++) {
+                    world.step(timeStep);
+                }
+            } else {
+                const dt = t - lastCallTime;
+                const numSteps = Math.ceil(dt / timeStep);
+                for (let i = 0; i < numSteps; i++) {
+                    world.step(timeStep);
+                }
+            }
+            lastCallTime = t
+
+            // CANNON SIMULATION
+            if (p.wind) {
+                simulateWindWithFlowfield();
+            }
+            updateLances();
+
+            const t2 = t * p.fireFlySpeed + 10
+            fireFly.position.x = -1 + noise3D(0, t2, 0) * 2
+            fireFly.position.y = -.4 + noise3D(t2 + 4, 0, 0) * .8
+            fireFly.position.z = -1 + noise3D(0, 0, t2 + 8) * 2
+            fireFlyLight.position.copy(fireFly.position)
+        }
+
+        controls.update()
+        renderer.render(scene, camera)
+        if (showStats) stats.end()
+
+        animation = requestAnimationFrame(animate)
+    };
+    animate()
+}
+
+export function dispose() {
+    cancelAnimationFrame(animation)
+    controls?.dispose()
+    lanceMate?.dispose()
+    groundGeom?.dispose()
+    groundMate?.dispose()
+    world = null
+    noise3D = null
+    flowField = null
+    window?.removeEventListener('resize', onWindowResize)
+    // window?.removeEventListener('mousemove', onMouseMove)
 }
