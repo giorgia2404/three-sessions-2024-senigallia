@@ -3,9 +3,9 @@
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 let scene, animation, onWindowResize, controls, onMouseMove
-let groundGeom
+let groundGeom, clothGeometry
 let groundMate, clothMaterial, mirrorMate
-let world
+let world, groundBody
 let noise3D
 let cloth, clothParticles, constraints = []
 let flowField
@@ -83,7 +83,7 @@ export function sketch() {
     ground.castShadow = false
     ground.receiveShadow = true
     scene.add(ground)
-    const groundBody = new CANNON.Body({
+    groundBody = new CANNON.Body({
         position: new CANNON.Vec3(0, p.floor - 1, 0),
         mass: 0,
         shape: new CANNON.Plane(),
@@ -112,7 +112,7 @@ export function sketch() {
     const cHeight = p.clothHeight
     const Nx = p.clothResolution
     const Ny = p.clothResolution
-    const clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny)
+    clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny)
     mirrorMate = new THREE.MeshPhongMaterial({
         color: 0x444444,
         envMap: cubeTextures[0].texture,
@@ -323,6 +323,12 @@ export function dispose() {
     mirrorMate?.dispose()
     groundGeom?.dispose()
     groundMate?.dispose()
+
+    cloth.geometry.dispose()
+    clothGeometry.dispose()
+    constraints.forEach(constraint => world.removeConstraint(constraint))
+    clothParticles.forEach(row => row.forEach(particle => world.removeBody(particle)))
+
     world = null
     noise3D = null
     flowField = null

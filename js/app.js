@@ -343,14 +343,16 @@ const loadTexture = (name, path, format) => {
 // Let's preload our textures
 // global.cubeTextures[n]
 loadCubeTexture('PureSky', './assets/textures/cube/PureSky-256/', '.png') // 0
-loadCubeTexture('PureSky', './assets/textures/cube/AbandonedParking-1024/', '.png') // 1
-loadCubeTexture('PureSky', './assets/textures/cube/cloud/', '.png') // 2
-// loadCubeTexture('luna_texture_disp_1k', './assets/textures/luna_texture_disp_1k_', '.jpg') // 3
+loadCubeTexture('AbandonedParking', './assets/textures/cube/AbandonedParking-1024/', '.png') // 1
+loadCubeTexture('cloud', './assets/textures/cube/cloud/', '.png') // 2
+loadCubeTexture('TropicalSunnyDay', './assets/textures/cube/TropicalSunnyDay/', '.jpg') // 3
 // ...
 // global.textures[n]
-loadTexture('StoneDiff', './assets/textures/stone_tiles_02_diff_1k', '.jpg') // 0
-// loadTexture('luna_1k_diff', './assets/textures/luna_1k', '.png') // 1
-loadTexture('eye', './assets/eye/textures/01___Default_baseColor1', '.jpeg') // 1 XXX
+loadTexture('luna_1k_diff', './assets/textures/luna_texture_disp_1k_', '.png') // 0
+loadTexture('eye', './assets/models/eye/textures/01___Default_baseColor1', '.jpeg') // 1
+loadTexture('luna_1k_diff', './assets/textures/luna_texture_disp_1k_', '.jpg') // 2
+loadTexture('bosco', './assets/textures/bosco4', '.exr') // 3
+loadTexture('table_mountain_2_puresky', './assets/textures/table_mountain_2_puresky_4k', '.exr') //4
 
 
 /// ...
@@ -389,7 +391,7 @@ const randomSketch = () => {
 	*/
 	const sets = [0, 1, 2, 3, 4] // available sets
 	const setsWeights = [0.20, 0.20, 0.20, 0.20, 0.20] // available sets: probability weight
-	const sketches = [1, 1, 1, 1, 3] // no. of available sketches for each set
+	const sketches = [1, 1, 1, 1, 8] // no. of available sketches for each set
 	// playSet
 	// pure random
 	// global.playSet = Math.round(Math.random() * (sets.length - 1));

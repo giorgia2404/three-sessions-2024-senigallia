@@ -5,7 +5,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 let scene, animation, onWindowResize, controls, onMouseMove
 let groundGeom
 let groundMate, clothMaterial, mirrorMate
-let world
+let world, groundBody
 let noise3D
 let cloth, clothParticles, constraints = []
 let flowField
@@ -83,7 +83,7 @@ export function sketch() {
     ground.castShadow = false
     ground.receiveShadow = true
     scene.add(ground)
-    const groundBody = new CANNON.Body({
+    groundBody = new CANNON.Body({
         position: new CANNON.Vec3(0, p.floor - 1, 0),
         mass: 0,
         shape: new CANNON.Plane(),
@@ -353,6 +353,18 @@ export function sketch() {
 
 export function dispose() {
     cancelAnimationFrame(animation)
+    scene.remove(cloth);
+    clothParticles.forEach((row) => {
+        row.forEach((particle) => {
+            world.removeBody(particle);
+        });
+    });
+    constraints.forEach((constraint) => {
+        world.removeConstraint(constraint);
+    });
+    world.removeBody(groundBody);
+    // constraints = null;
+    clothParticles = null;
     controls?.dispose()
     clothMaterial?.dispose()
     mirrorMate?.dispose()
