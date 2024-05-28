@@ -12,20 +12,22 @@ let flowField
 export function sketch() {
 
     const p = {
+        // lights
+        night: false,
         // lance
         lanceLength: 1 + Math.random() * 4,
         baseDiam: .04,
         topDiam: 0,
         numRows: 1 + Math.floor(Math.random() * 10),
         numCols: 1 + Math.floor(Math.random() * 10),
-        spacing: .5 + Math.random() * .7,
+        spacing: .2 + Math.random() * .7,
         spacingVariability: Math.random(),
         lanceMass: 1,
         // view
         lookAtCenter: new THREE.Vector3(0, 0, 0),
-        cameraPosition: new THREE.Vector3(0, -0.9, - 4 - Math.random() * 2),
+        cameraPosition: new THREE.Vector3(0, -0.9, - 3 - Math.random() * 2),
         autoRotate: true,
-        autoRotateSpeed: -.1 + Math.random() * .2,
+        autoRotateSpeed: -.2 + Math.random() * .4,
         camera: 35,
         // fireflies
         fireFlySpeed: .1,
@@ -33,9 +35,24 @@ export function sketch() {
         background: new THREE.Color(0x000000),
         gravity: 20,
         wind: true,
-        windStrength: .1,
+        windStrength: .1 + Math.random() * .2,
         floor: -1,
     };
+
+    //debug random night/day
+    if (Math.random() > .5) p.night = true
+
+    let lanceColor
+    let groundColor
+    if (!p.night) {
+        p.background = new THREE.Color(0xaaaaaa)
+        lanceColor = new THREE.Color(0x000000)
+        groundColor = new THREE.Color(0x333333)
+    } else {
+        p.background = new THREE.Color(0x000000)
+        lanceColor = new THREE.Color(0xcccccc)
+        groundColor = new THREE.Color(0x666666)
+    }
 
     // other parameters
     let near = 0.2, far = 1000;
@@ -58,7 +75,7 @@ export function sketch() {
     // SCENE
     scene = new THREE.Scene()
     scene.background = p.background
-    scene.fog = new THREE.Fog(scene.background, 3, 20)
+    scene.fog = new THREE.Fog(scene.background, 2, 20)
     world = new CANNON.World({
         gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
@@ -67,7 +84,7 @@ export function sketch() {
 
     // MATERIALS
     groundMate = new THREE.MeshStandardMaterial({
-        color: 0x333333,
+        color: groundColor,
         roughness: 1,
         metalness: 0,
         fog: true,
@@ -82,7 +99,7 @@ export function sketch() {
 
     })
     lanceMate = new THREE.MeshPhongMaterial({
-        color: 0x666666,
+        color: lanceColor,
         envMap: cubeTextures[0].texture,
         // emissive: 0xffffff,
         // side: THREE.DoubleSide,
@@ -123,7 +140,7 @@ export function sketch() {
     controls.minDistance = 2;
     controls.maxDistance = 6;
     controls.maxPolarAngle = Math.PI / 2 + 0.15;
-    controls.minPolarAngle = -Math.PI ;
+    controls.minPolarAngle = -Math.PI;
     controls.autoRotate = p.autoRotate;
     controls.autoRotateSpeed = p.autoRotateSpeed;
     controls.target = p.lookAtCenter;
@@ -198,7 +215,10 @@ export function sketch() {
     scene.add(fireFly)
 
     // LIGHTS
-    const light = new THREE.DirectionalLight(0xffffff, .5)
+    let lightIntensity
+    if (p.night) lightIntensity = .5
+    else lightIntensity = 4
+    const light = new THREE.DirectionalLight(0xffffff, lightIntensity)
     light.position.set(10, 20, -20)
     light.target.position.set(0, 0, 0)
     light.castShadow = true
