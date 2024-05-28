@@ -11,38 +11,48 @@ let flowField
 
 export function sketch() {
 
-    // let mouse = new THREE.Vector2()
-    // onMouseMove = (event) => {
-    //     mouse.x = (event.clientX / window.innerWidth) * 2 - 1
-    //     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
-    // };
-    // window.addEventListener('mousemove', onMouseMove);
-
     const p = {
+        // lights
+        night: false,
         // lance
-        lanceLength: 1 + Math.random() * 3,
-        baseDiam: .05,
-        topDiam: .01,
-        numRows: 1 + Math.random() * 10,
-        numCols: 1 + Math.random() * 10,
-        spacing: .5 + Math.random() * .7,
-        spacingVariability: 0, //.3 + Math.random() * 3,
+        lanceLength: 1 + Math.random() * 4,
+        baseDiam: .04,
+        topDiam: 0,
+        numRows: 1 + Math.floor(Math.random() * 10),
+        numCols: 1 + Math.floor(Math.random() * 10),
+        spacing: .2 + Math.random() * .7,
+        spacingVariability: Math.random(),
         lanceMass: 1,
         // view
-        lookAtCenter: new THREE.Vector3(0, .1, 0),
-        cameraPosition: new THREE.Vector3(0, -0.9,-1),
+        lookAtCenter: new THREE.Vector3(0, 0, 0),
+        cameraPosition: new THREE.Vector3(0, -0.9, - 3 - Math.random() * 2),
         autoRotate: true,
-        autoRotateSpeed: -.1 + Math.random() * .2,
+        autoRotateSpeed: -.2 + Math.random() * .4,
         camera: 35,
         // fireflies
         fireFlySpeed: .1,
         // world
         background: new THREE.Color(0x000000),
-        gravity: 10,
+        gravity: 20,
         wind: true,
-        windStrength: .3,
+        windStrength: .1 + Math.random() * .2,
         floor: -1,
     };
+
+    //debug random night/day
+    if (Math.random() > .5) p.night = true
+
+    let lanceColor
+    let groundColor
+    if (!p.night) {
+        p.background = new THREE.Color(0xaaaaaa)
+        lanceColor = new THREE.Color(0x000000)
+        groundColor = new THREE.Color(0x333333)
+    } else {
+        p.background = new THREE.Color(0x000000)
+        lanceColor = new THREE.Color(0xcccccc)
+        groundColor = new THREE.Color(0x666666)
+    }
 
     // other parameters
     let near = 0.2, far = 1000;
@@ -65,7 +75,7 @@ export function sketch() {
     // SCENE
     scene = new THREE.Scene()
     scene.background = p.background
-    scene.fog = new THREE.Fog(scene.background, 3, 20)
+    scene.fog = new THREE.Fog(scene.background, 2, 20)
     world = new CANNON.World({
         gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
@@ -74,9 +84,9 @@ export function sketch() {
 
     // MATERIALS
     groundMate = new THREE.MeshStandardMaterial({
-        color: 0x333333,
-        roughness: .7,
-        metalness: .3,
+        color: groundColor,
+        roughness: 1,
+        metalness: 0,
         fog: true,
 
     })
@@ -89,7 +99,7 @@ export function sketch() {
 
     })
     lanceMate = new THREE.MeshPhongMaterial({
-        color: 0x999999,
+        color: lanceColor,
         envMap: cubeTextures[0].texture,
         // emissive: 0xffffff,
         // side: THREE.DoubleSide,
@@ -127,10 +137,10 @@ export function sketch() {
     controls.enablePan = false;
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.minDistance = 5;
-    controls.maxDistance = 40;
-    controls.maxPolarAngle = Math.PI / 2 + 0.2;
-    controls.minPolarAngle = Math.PI / 2 - 0.4;
+    controls.minDistance = 2;
+    controls.maxDistance = 6;
+    controls.maxPolarAngle = Math.PI / 2 + 0.15;
+    controls.minPolarAngle = -Math.PI;
     controls.autoRotate = p.autoRotate;
     controls.autoRotateSpeed = p.autoRotateSpeed;
     controls.target = p.lookAtCenter;
@@ -197,15 +207,18 @@ export function sketch() {
     }
 
     // FIREFLIES
-    const fireFlyGeom = new THREE.SphereGeometry(.005, 3, 2)
+    const fireFlyGeom = new THREE.SphereGeometry(.005, 10, 2)
     const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate)
-    const fireFlyLight = new THREE.PointLight(0xFFC702, 7, 4); // Luce direzionale con intensità 2
+    const fireFlyLight = new THREE.PointLight(0xFFC702, 3, 2); // Luce direzionale con intensità 2
     fireFlyLight.castShadow = true; // Abilita la creazione di ombre
     scene.add(fireFlyLight);
     scene.add(fireFly)
-    
+
     // LIGHTS
-    const light = new THREE.DirectionalLight(0xffffff, .5)
+    let lightIntensity
+    if (p.night) lightIntensity = .5
+    else lightIntensity = 4
+    const light = new THREE.DirectionalLight(0xffffff, lightIntensity)
     light.position.set(10, 20, -20)
     light.target.position.set(0, 0, 0)
     light.castShadow = true
