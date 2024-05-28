@@ -50,7 +50,7 @@ function init() {
   // model
 
   const loader = new GLTFLoader();
-  loader.load( './assets/models/low-poly_male_body/Orlando_pose_threejs.glb', function ( gltf ) {
+  loader.load( './assets/models/human-pose/Orlando_pose_threejs.glb', function ( gltf ) {
 
     model = gltf.scene;
     scene.add( model );
