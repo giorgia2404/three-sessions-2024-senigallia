@@ -211,9 +211,9 @@ export function sketch() {
     rectLight.add(rectLightHelper)
 
     const video = document.getElementById('video');
-    // video.crossOrigin = "anonymous";
-    // video.playsinline = "true";
-    // video.loop = 'true';
+    video.crossOrigin = "anonymous";
+    video.playsinline = "true";
+    video.loop = 'true';
     video.play();
 
     const texture = new THREE.VideoTexture(video);
