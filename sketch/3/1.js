@@ -211,8 +211,8 @@ export function sketch() {
     // FIREFLIES
     const fireFlyGeom = new THREE.SphereGeometry(.005, 10, 2)
     const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate)
-    const fireFlyLight = new THREE.PointLight(0xFFC702, 3, 2); // Luce direzionale con intensità 2
-    fireFlyLight.castShadow = true; // Abilita la creazione di ombre
+    const fireFlyLight = new THREE.PointLight(0xFFC702, 3, 2); 
+    fireFlyLight.castShadow = true; 
     scene.add(fireFlyLight);
     scene.add(fireFly)
 
