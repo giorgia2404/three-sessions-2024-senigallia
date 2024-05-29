@@ -122,7 +122,7 @@ export function sketch() {
     })
     mergeVertices(parentGeometry)
     let parent
-    dispMap = textures[1].texture, 
+    dispMap = textures[2].texture, 
     material2 = new THREE.MeshPhysicalMaterial({
         //color: 0xFFFFFF, 
         color: 0x9c9c9c,
