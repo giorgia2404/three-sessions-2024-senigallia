@@ -78,7 +78,7 @@ function init() {
 
 function createGUI( model, animations ) {
 
-  const states = [ 'appeso', 'eremita', 'forza', 'giustizia', 'idle', 'imperatore', 'imperatrice', 'innamorati', 'mago', 'matto', 'morte', 'run', 'ruota', 'sole', 'Walk' ];
+  const states = [ 'appeso', 'arrampica', 'caduta', 'disteso', 'eremita', 'forza', 'fuga', 'giustizia', 'guardingo', 'idle', 'imperatore', 'imperatrice', 'innamorati', 'luna', 'mago', 'matto', 'morte', 'noia', 'porta', 'run', 'ruota', 'salsa', 'saluto', 'sole','solleva','tiene', 'Walk' ];
 
   gui = new GUI();
 
