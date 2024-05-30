@@ -36,6 +36,7 @@ export function sketch() {
         autoRotate: false,
         autoRotateSpeed: -0.2,
         camera: 35,
+        steadyCam: true,
         // world
         background: new THREE.Color(0x000000),
         floor: 0
@@ -77,7 +78,6 @@ export function sketch() {
     scene = new THREE.Scene()
     scene.background = p.background
     scene.fog = new THREE.Fog(scene.background, 1, 10)
-    geometry = new THREE.SphereGeometry(1, 48, 48)
 
     mirrorMate = new THREE.MeshPhongMaterial({
         color: 0x444444,
@@ -105,8 +105,41 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
 
+    let moonGlassGeom = new THREE.IcosahedronGeometry(.5, 0)
+    let moonGlassMaterial =  new THREE.MeshPhysicalMaterial({
+        // transmission: 1,
+        // // opacity: .1,
+        // // transparent: true,
+        // thickness: .1,
+        // roughness: 0.07,
+        // envMap: cubeTextures[0].texture,
+        // envMapIntensity: 1.5
+
+        // color: 0x000000,
+        envMap: cubeTextures[0].texture,
+        // reflectivity: 1.0,
+        transmission: 1.0,
+        roughness: 0.0,
+        // metalness: 0.1,
+        // clearcoat: 0.1,
+        // clearcoatRoughness: 0.01,
+        // ior: 1,
+        thickness: .2,
+        fog: true,
+        side: THREE.DoubleSide
+    })
+    let moonGlass= new THREE.Mesh(moonGlassGeom, moonGlassMaterial)
+    // moonGlass.scale.set(p.moonScale+1, p.moonScale+1, p.moonScale+1)
+    moonGlass.position.z = -2
+    moonGlass.position.x = 1
+    moonGlass.position.y = .2
+    moonGlass.rotation.z = .2
+    moonGlass.castShadow = true
+    scene.add(moonGlass)
+
     // moon
     let moon
+    geometry = new THREE.SphereGeometry(1, 48, 48)
     dispMap = textures[6].texture
     material2 = new THREE.MeshPhysicalMaterial({
         //color: 0xFFFFFF, 
@@ -119,8 +152,6 @@ export function sketch() {
         roughness: 1,
         metalness: 0,
         fog: false
-
-
     })
     dispMap.wrapS = dispMap.wrapT = THREE.RepeatWrapping
     // dispMap.repeat.set(1, 1)
@@ -222,7 +253,7 @@ export function sketch() {
     // light.castShadow = true
     // scene.add(light2)
     const pointLight = new THREE.PointLight(0xffffff, 2)
-    pointLight.position.set(70, 10, 20)
+    pointLight.position.set(-70, 10, 20)
     scene.add(pointLight)
     const pointLight2 = new THREE.PointLight(0xffffff, .1)
     pointLight2.position.set(-30, 20, -20)
@@ -264,6 +295,7 @@ export function sketch() {
                 moon.position.z = p.moonPos.z + noise3D(0, 0, t1 + 8) * .1
                 moon.rotation.y += noise3D(0, 0, t + 10) * p.moonRotationSpeed
                 starField.rotation.y -= noise3D(0, 0, t + 10) * p.moonRotationSpeed * .1
+                // moonGlass.position.copy(moon.position)
             }
             // ...
 
@@ -276,7 +308,7 @@ export function sketch() {
             const steadycamFlowZ = noise3D(0, 0, steadycamFlowTime) * steadycamFlowAmplitude;
 
             // Apply steadycam flow to camera position if not in drag mode
-            if (!controls.isDragging) {
+            if (!controls.isDragging && p.steadyCam) {
                 // const cameraPosition = controls.object.position.clone();
                 // cameraPosition.add(new THREE.Vector3(steadycamFlowX, steadycamFlowY, steadycamFlowZ));
                 // controls.object.position.copy(cameraPosition);
