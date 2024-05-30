@@ -21,7 +21,7 @@ export function sketch() {
 
     const p = {
         // cloth
-        clothWidth: 10,
+        clothWidth: 20,
         clothHeight: 10,
         clothResolution: 22,
         // view
@@ -33,8 +33,8 @@ export function sketch() {
         // world
         background: new THREE.Color(0x000000),
         clothMass: 1,
-        gravity: -18,
-        wind: true,
+        gravity: -9,
+        wind: false,
         windStrength: 2 + Math.random() * 8,
         floor: -2,
     };
@@ -64,7 +64,7 @@ export function sketch() {
     world = new CANNON.World({
         gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
-    world.solver.iterations = 10
+    world.solver.iterations = 20
 
     // MATERIALS
     groundMate = new THREE.MeshStandardMaterial({
@@ -102,7 +102,7 @@ export function sketch() {
     controls.minDistance = 5;
     controls.maxDistance = 40;
     controls.maxPolarAngle = Math.PI / 2 + 0.2;
-    controls.minPolarAngle = Math.PI / 2 - 0.4;
+    controls.minPolarAngle = - Math.PI
     controls.autoRotate = p.autoRotate;
     controls.autoRotateSpeed = p.autoRotateSpeed;
     controls.target = p.lookAtCenter;
@@ -290,6 +290,29 @@ export function sketch() {
     const stepsPerFrame = 2
     let lastCallTime
 
+    let rotRadius = 4;
+    let targetRotRadius = rotRadius;
+    let targetRotAngle = 0;
+    let tRot = 0;
+    const noiseFreq = 0.5;
+    const minRotRadius = .5;
+    const maxRotRadius = 8;
+    const minRotSpeed = -.5;
+    const maxRotSpeed = .5;
+    const rotRadiusLerp = 0.01;
+    const rotAngleLerp = 0.01;
+    const accelerationThreshold = 0.95;
+    const accelerationMultiplier = 20;
+
+    function smoothedNoise(t, freq, min, max, threshold, multiplier) {
+        const noise = noise3D(t * freq, 0, 0);
+        const value = THREE.MathUtils.mapLinear(noise, -1, 1, min, max);
+        if (Math.random() < threshold) {
+            return value * multiplier;
+        }
+        return value;
+    }
+
     const animate = () => {
         if (showStats) stats.begin();
 
@@ -336,20 +359,25 @@ export function sketch() {
                 }
             }
 
-            // Calcola le nuove posizioni degli anchorBodies per il movimento circolare
-            const radius = 8; // Raggio del cerchio
-            const speed = 1.5; // Velocità di rotazione
+
+
+            targetRotRadius = smoothedNoise(t, noiseFreq, minRotRadius, maxRotRadius);
+            targetRotAngle += smoothedNoise(t, noiseFreq, minRotSpeed, maxRotSpeed, accelerationThreshold, accelerationMultiplier) * timeStep;
+
+            rotRadius += (targetRotRadius - rotRadius) * rotRadiusLerp;
+            tRot += (targetRotAngle - tRot) * rotAngleLerp;
+
 
             anchorBodies[0].position.set(
-                midpoint.x + radius * Math.cos(speed * t),
+                midpoint.x + rotRadius * Math.cos(tRot),
                 midpoint.y,
-                midpoint.z + radius * Math.sin(speed * t)
+                midpoint.z + rotRadius * Math.sin(tRot)
             );
 
             anchorBodies[1].position.set(
-                midpoint.x + radius * Math.cos(speed * t + Math.PI),
+                midpoint.x + rotRadius * Math.cos(tRot + Math.PI),
                 midpoint.y,
-                midpoint.z + radius * Math.sin(speed * t + Math.PI)
+                midpoint.z + rotRadius * Math.sin(tRot + Math.PI)
             );
 
             const positions = cloth.geometry.attributes.position.array;
