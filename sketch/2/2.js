@@ -34,7 +34,7 @@ export function sketch() {
         childPos: new THREE.Vector3(6, 1.5, 0),
         parentSpeed: 0.07,
         childSpeed: 1,
-        parentRotationSpeed: 0.002,
+        parentRotationSpeed: 0.02,
         childLight: false,
         // view
         lookAtCenter: new THREE.Vector3(0, 1, 0),
@@ -72,17 +72,15 @@ export function sketch() {
     }
     window.addEventListener('resize', onWindowResize)
 
-    
-
-    // CONTROLS
+        // CONTROLS
     controls = new OrbitControls(camera, renderer.domElement)
     controls.enablePan = false
     controls.enableDamping = true
     controls.dampingFactor = 0.05
     controls.minDistance = 3
-    controls.maxDistance = 25
-    controls.maxPolarAngle = Math.PI / 2 + 0.2
-    controls.minPolarAngle = Math.PI / 2 - 0.4
+    controls.maxDistance = 30
+    controls.maxPolarAngle = Math.PI
+    controls.minPolarAngle = 0
     controls.autoRotate = p.autoRotate
     controls.autoRotateSpeed = p.autoRotateSpeed
     controls.target = p.lookAtCenter
@@ -115,7 +113,7 @@ export function sketch() {
     const iterations = 4
     parentGeometry = LoopSubdivision.modify(geometry, iterations, {
         split: false,
-        uvSmooth: false,
+        uvSmooth: true,
         preserveEdges: false,
         flatOnly: false,
         maxTriangles: 5000
@@ -127,7 +125,7 @@ export function sketch() {
         //color: 0xFFFFFF, 
         color: 0x9c9c9c,
         //opacity: 0.5 ,
-        transparent: true,
+        transparent: false,
         map: textures[0].texture,
         displacementMap: dispMap,
         displacementScale: 0.02,
