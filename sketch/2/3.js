@@ -282,19 +282,18 @@ export function sketch() {
                 // controls.object.position.copy(cameraPosition);
                 const cameraPosition = controls.object.position.clone();
                 cameraPosition.add(new THREE.Vector3(steadycamFlowX, steadycamFlowY, steadycamFlowZ));
-            
+
                 // Clamp the camera position within the defined boundaries
                 cameraPosition.x = clamp(cameraPosition.x, steadycamBounds.x.min, steadycamBounds.x.max);
                 cameraPosition.y = clamp(cameraPosition.y, steadycamBounds.y.min, steadycamBounds.y.max);
                 cameraPosition.z = clamp(cameraPosition.z, steadycamBounds.z.min, steadycamBounds.z.max);
-            
+
                 controls.object.position.copy(cameraPosition);
             }
         }
 
         controls.update()
         renderer.render(scene, camera) // RENDER
-        // composer.render();
         if (showStats) stats.end() // XXX
 
 

@@ -66,7 +66,7 @@ export function sketch() {
     controls.minDistance = 1
     controls.maxDistance = 6.5
     controls.maxPolarAngle = Math.PI / 2 + 0.2
-    controls.minPolarAngle = Math.PI / 2 - 0.4
+    controls.minPolarAngle = 0
     controls.autoRotate = p.autoRotate
     controls.autoRotateSpeed = p.autoRotateSpeed
     controls.target = p.lookAtCenter
@@ -272,6 +272,20 @@ export function sketch() {
     // nameFolder.open()
     // ...
 
+
+
+    const steadycamFlowSpeed = .03; // Adjust this value to change the speed of the steadycam flow
+    const steadycamFlowAmplitude = 0.01; // Adjust this value to change the amplitude of the steadycam flow
+    let steadycamFlowTime = 0;
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
+    const steadycamBounds = {
+        x: { min: -2, max: 1.3 },
+        y: { min: 0, max: 1 },
+        z: { min: -6.5, max: -4.5 }
+    };
+
     // NOISE
     noise3D = NOISE.createNoise3D()
     let t0 = Math.random() * 10
@@ -281,7 +295,6 @@ export function sketch() {
     // ANIMATE
     const animate = () => {
         if (showStats) stats.begin() // XXX
-        controls.update()
 
         if (!paused) {
 
@@ -298,8 +311,33 @@ export function sketch() {
             fireFly.position.z = -5 - noise3D(0, 0, t2 + 8) * 3
             fireFlyLight.position.copy(fireFly.position)
 
+            // Update steadycam flow time
+            steadycamFlowTime += dt * steadycamFlowSpeed;
+
+            // Calculate steadycam flow offsets using noise functions
+            const steadycamFlowX = noise3D(steadycamFlowTime, 0, 0) * steadycamFlowAmplitude;
+            const steadycamFlowY = noise3D(0, steadycamFlowTime, 0) * steadycamFlowAmplitude;
+            const steadycamFlowZ = noise3D(0, 0, steadycamFlowTime) * steadycamFlowAmplitude;
+
+            // Apply steadycam flow to camera position if not in drag mode
+            if (!controls.isDragging) {
+                // const cameraPosition = controls.object.position.clone();
+                // cameraPosition.add(new THREE.Vector3(steadycamFlowX, steadycamFlowY, steadycamFlowZ));
+                // controls.object.position.copy(cameraPosition);
+                const cameraPosition = controls.object.position.clone();
+                cameraPosition.add(new THREE.Vector3(steadycamFlowX, steadycamFlowY, steadycamFlowZ));
+
+                // Clamp the camera position within the defined boundaries
+                cameraPosition.x = clamp(cameraPosition.x, steadycamBounds.x.min, steadycamBounds.x.max);
+                cameraPosition.y = clamp(cameraPosition.y, steadycamBounds.y.min, steadycamBounds.y.max);
+                cameraPosition.z = clamp(cameraPosition.z, steadycamBounds.z.min, steadycamBounds.z.max);
+
+                controls.object.position.copy(cameraPosition);
+            }
+
         }
 
+        controls.update()
         renderer.render(scene, camera) // RENDER
         if (showStats) stats.end() // XXX
 
