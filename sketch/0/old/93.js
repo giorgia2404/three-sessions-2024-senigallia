@@ -106,15 +106,6 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
 
-    const neongeometry = new THREE.SphereGeometry(4, 32, 32);
-    const neonmaterial = new THREE.MeshPhongMaterial({ color: p.background, emissive: p.background,
-        shininess: 200});
-    const lightsphere = new THREE.Mesh(neongeometry, neonmaterial);
-    
-    lightsphere.position.y = 6
-    lightsphere.position.z= 4
-    scene.add(lightsphere);
-
     // Let's load our low poly human
     //GLTFLoader
     let gltfLoaded = false
@@ -144,7 +135,7 @@ export function sketch() {
                     node.receiveShadow = true
                 }
             })
-            human.position.y = p.floor 
+            human.position.y = p.floor + size.y / 2 - 0.5
             human.position.z = 2
             human.rotation.y = Math.PI
             // animations
@@ -178,14 +169,14 @@ export function sketch() {
 
     // big rect
     RectAreaLightUniformsLib.init();
-   /* let rectLightWidth = 4
+    let rectLightWidth = 4
     let rectLightHeight = 5.5
     let rectLightIntensity = 5
     const rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], rectLightIntensity, rectLightWidth, rectLightHeight)
     rectLight.position.set(0, p.floor + rectLightHeight / 2, 10)
     scene.add(rectLight)
     const rectLightHelper = new RectAreaLightHelper(rectLight)
-    rectLight.add(rectLightHelper) */
+    rectLight.add(rectLightHelper)
 
 
     const light = new THREE.DirectionalLight(0xffffff, .4)
