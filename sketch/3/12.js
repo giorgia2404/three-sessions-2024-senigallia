@@ -1,4 +1,4 @@
-//TEST DAY FOREST NO LUCCIOLE
+//TEST NIGHT FOREST CON LUCCIOLE
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -30,24 +30,25 @@ export function sketch() {
         autoRotateSpeed: -.2 + Math.random() * .4,
         camera: 35,
         // fireflies
+        numfireflies: 10,
         fireFlySpeed: .1,
         // world
         background: new THREE.Color(0x000000),
         gravity: 20,
         wind: true,
-        windStrength: .1 + Math.random() * .2,
+        windStrength: .1 + Math.random() * .1,
         floor: -1,
     };
 
     //debug random night/day
-   
+    //only night scene
 
     let lanceColor
     let groundColor
-  
-        p.background = new THREE.Color(0xaaaaaa)
-        lanceColor = new THREE.Color(0x1E1E1E)
-        groundColor = new THREE.Color(0x333333)
+
+        p.background = new THREE.Color(0x000000)
+        lanceColor = new THREE.Color(0xcccccc)
+        groundColor = new THREE.Color(0x666666)
     
 
     // other parameters
@@ -71,7 +72,7 @@ export function sketch() {
     // SCENE
     scene = new THREE.Scene()
     scene.background = p.background
-    scene.fog = new THREE.Fog(scene.background, 2, 20)
+    scene.fog = new THREE.Fog(scene.background, 10, 20)
     world = new CANNON.World({
         gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
@@ -82,10 +83,12 @@ export function sketch() {
     groundMate = new THREE.MeshStandardMaterial({
         color: groundColor,
         roughness: 1,
-        metalness: 0,
+        metalness: 1,
         fog: true,
 
     })
+
+
     fireFlyMate = new THREE.MeshStandardMaterial({
         color: 0xFFC702,
         emissive: 0xFFC702,
@@ -108,7 +111,6 @@ export function sketch() {
         //flatShading: true,
     })
 
-    
     // Static ground plane
     groundGeom = new THREE.PlaneGeometry(20, 20)
     let ground = new THREE.Mesh(groundGeom, groundMate)
@@ -205,35 +207,49 @@ export function sketch() {
     }
 
     // FIREFLIES
-    const fireFlyGeom = new THREE.SphereGeometry(.005, 10, 2)
-    const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate)
-    const fireFlyLight = new THREE.PointLight(0xFFC702, 3, 2); // Luce direzionale con intensità 2
-    fireFlyLight.castShadow = true; // Abilita la creazione di ombre
-    scene.add(fireFlyLight);
-    scene.add(fireFly)
+    // const fireFlyGeom = new THREE.SphereGeometry(.005, 10, 2)
+    // const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate)
+    // const fireFlyLight = new THREE.PointLight(0xFFC702, 3, 2); // Luce direzionale con intensità 2
+    // fireFlyLight.castShadow = true; // Abilita la creazione di ombre
+    // scene.add(fireFlyLight);
+    // scene.add(fireFly)
+
+    // FIREFLIES ARRAY
+    const arrayfireflies = []
+
+    for (let i = 0; i < p.numfireflies; i++) {
+        const fireFlyGeom = new THREE.SphereGeometry(.005, 10, 2);
+        const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate);
+        const fireFlyLight = new THREE.PointLight(0xFFC702, 3, 1);
+        fireFlyLight.castShadow = true; // Abilita la creazione di ombre
+        arrayfireflies.push(fireFly);
+        fireFly.add(fireFlyLight);
+       //scene.add(fireFlyLight)
+        scene.add(fireFly)
+    }
 
     // LIGHTS
     let lightIntensity
-    //if (p.night) lightIntensity = .9
-    lightIntensity = 3
+    lightIntensity = .3
     const light = new THREE.DirectionalLight(0xffffff, lightIntensity)
-    light.position.set(10, 20, -20)
+    light.position.set(20, 20, -20)
     light.target.position.set(0, 0, 0)
     light.castShadow = true
-    light.shadow.radius = 5
+    light.shadow.radius = 10
     light.shadow.camera.near = 2
-    light.shadow.camera.far = 300
+    light.shadow.camera.far = 200
     light.shadow.bias = 0.0001
     light.shadow.mapSize.width = shadowMapWidth
     light.shadow.mapSize.height = shadowMapHeight
     scene.add(light)
-    const lightHelper = new THREE.DirectionalLightHelper(light, 5);
+    const lightHelper = new THREE.DirectionalLightHelper(light, 3);
     // scene.add(lightHelper);
 
-    /*const lightD = new THREE.DirectionalLight(0xffffff, 10)
+    /*const lightD = new THREE.DirectionalLight(0xffffff, 100)
     lightD.position.set(-4, 0, -5)
     lightD.target.position.set(0, 4, 0)
-    // scene.add(lightD)*/
+    // scene.add(lightD)
+    */
 
     //const ambientLight = new THREE.AmbientLight(0xffffff)
     // scene.add(ambientLight)
@@ -310,15 +326,22 @@ export function sketch() {
             // CANNON SIMULATION
             if (p.wind) {
                 simulateWindWithFlowfield();
-                
             }
             updateLances();
 
-            const t2 = t * p.fireFlySpeed + 10
-            fireFly.position.x = -1 + noise3D(0, t2, 0) * 2
-            fireFly.position.y = -.4 + noise3D(t2 + 4, 0, 0) * .8
-            fireFly.position.z = -1 + noise3D(0, 0, t2 + 8) * 2
-            fireFlyLight.position.copy(fireFly.position)
+            // const t2 = t * p.fireFlySpeed + 10
+            // fireFly.position.x = -1 + noise3D(0, t2, 0) * 2
+            // fireFly.position.y = -.4 + noise3D(t2 + 4, 0, 0) * .8
+            // fireFly.position.z = -1 + noise3D(0, 0, t2 + 8) * 2
+            // fireFlyLight.position.copy(fireFly.position)
+
+            for (let i = 0; i < p.numfireflies; i++) {
+                const t2 = t * p.fireFlySpeed + 10;
+                arrayfireflies[i].position.x = -1 + noise3D(0, t2 + i, 0) * 2;
+                arrayfireflies[i].position.y = -.4 + noise3D(t2 + i + 4, 0, 0) * .8;
+                arrayfireflies[i].position.z = -1 + noise3D(0, 0, t2 - i + 8) * 2;
+                arrayfireflies[i].position.copy(arrayfireflies[i].position);
+            }
         }
 
         controls.update()

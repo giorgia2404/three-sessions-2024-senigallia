@@ -1,7 +1,7 @@
+// EYE
+
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
