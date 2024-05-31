@@ -1,4 +1,4 @@
-// MOON
+// Planets + DiffisionMap + Noise
 // Partially inspired by NASA's https://github.com/vishkashpvp/moon3d
 // Moon texture: https://svs.gsfc.nasa.gov/cgi-bin/details.cgi?aid=4720
 
@@ -9,19 +9,15 @@ import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 
 
-let scene, camera
+let scene
 let geometry, groundGeom, moonGeometry, reflectorBackGeom
 let material, material2, groundMate, mirrorMate
 let mirrorBack // reflector
-let moonGlassMaterial
-let moonGlassGeom
 let dispMap
 let animation
 let onWindowResize
 let noise3D
 let controls
-let starMaterial, starField
-let lightS, pointLight, pointLight2
 
 export function sketch() {
     // console.log("Sketch launched")
@@ -52,7 +48,7 @@ export function sketch() {
     let paused = false
 
     // CAMERA
-    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
     camera.position.copy(p.cameraPosition)
     camera.lookAt(p.lookAtCenter)
 
@@ -109,8 +105,8 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
 
-    moonGlassGeom = new THREE.IcosahedronGeometry(.5, 0)
-    moonGlassMaterial = new THREE.MeshPhysicalMaterial({
+    let moonGlassGeom = new THREE.IcosahedronGeometry(.5, 0)
+    let moonGlassMaterial =  new THREE.MeshPhysicalMaterial({
         // transmission: 1,
         // // opacity: .1,
         // // transparent: true,
@@ -130,9 +126,9 @@ export function sketch() {
         // ior: 1,
         thickness: .2,
         fog: true,
-        side: THREE.DoubleSide
+       side: THREE.DoubleSide
     })
-    let moonGlass = new THREE.Mesh(moonGlassGeom, moonGlassMaterial)
+    let moonGlass= new THREE.Mesh(moonGlassGeom, moonGlassMaterial)
     // moonGlass.scale.set(p.moonScale+1, p.moonScale+1, p.moonScale+1)
     moonGlass.position.z = -2
     moonGlass.position.x = 1
@@ -145,16 +141,40 @@ export function sketch() {
     let moon
     geometry = new THREE.SphereGeometry(1, 48, 48)
     dispMap = textures[4].texture
-    material2 = new THREE.MeshPhysicalMaterial({
+    let material2 =  new THREE.MeshPhysicalMaterial({
+        transmission: 1,
+        //opacity: 0.5,
+        transparent: true,
+        map: textures[3].texture,
+        envMapIntensity: 4,
+        color: 0xffffff,
+        envMap: cubeTextures[0].texture,
+        reflectivity: 0.8,
+        transmission: 1.0,
+        roughness: 1.0,
+        metalness: 0.8,
+        clearcoat: 1,
+        clearcoatRoughness: 0.01,
+       // ior: 1,
+        thickness: .2,
+        fog: false,
+       side: THREE.DoubleSide
+   
+   
+   
+   
+   /* material2 = new THREE.MeshPhysicalMaterial({
         //color: 0xFFFFFF, 
         color: 0xffffff,
         //opacity: 0.5 ,
-        map: textures[3].texture,
+        transmoon: false,
+        map: textures[5].texture,
         bumpMap: dispMap,
         bumpScale: 0.015,
         roughness: 1,
         metalness: 0,
-        fog: false
+        fog: false*/
+
     })
     dispMap.wrapS = dispMap.wrapT = THREE.RepeatWrapping
     // dispMap.repeat.set(1, 1)
@@ -165,7 +185,11 @@ export function sketch() {
     moon.castShadow = true
     moon.receiveShadow = true
     scene.add(moon)
+   
+   
     // LIGHTS
+    
+
 
     // Stars field
     const stars = [];
@@ -183,12 +207,12 @@ export function sketch() {
         "position",
         new THREE.Float32BufferAttribute(stars, 3)
     );
-    starMaterial = new THREE.PointsMaterial({
+    const starMaterial = new THREE.PointsMaterial({
         size: 0.1,
         color: 0xffffff,
         fog: false,
     });
-    starField = new THREE.Points(starGeometry, starMaterial);
+    const starField = new THREE.Points(starGeometry, starMaterial);
     scene.add(starField);
 
     // REFLECTOR
@@ -234,7 +258,7 @@ export function sketch() {
     // scene.add(ambientLight)
 
     // LIGHTS
-    lightS = new THREE.SpotLight(0x999999, 1, 0, Math.PI / 5, 0.5)
+    let lightS = new THREE.SpotLight(0x999999, 1, 0, Math.PI / 5, 0.5)
     lightS.position.set(1, 50, 0)
     lightS.target.position.set(0, 0, 0)
     lightS.castShadow = true
@@ -255,12 +279,12 @@ export function sketch() {
     // light.target.position.set(-5, 0, 0)
     // light.castShadow = true
     // scene.add(light2)
-    pointLight = new THREE.PointLight(0xffffff, 2)
+    const pointLight = new THREE.PointLight(0xffffff, 2)
     pointLight.position.set(-70, 10, 20)
     scene.add(pointLight)
-    pointLight2 = new THREE.PointLight(0xffffff, .1)
+    const pointLight2 = new THREE.PointLight(0xffffff, .1)
     pointLight2.position.set(-30, 20, -20)
-    scene.add(pointLight2) 
+    scene.add(pointLight2)
     // const ambientLight = new THREE.AmbientLight(0xffffff)
     // scene.add(ambientLight)
 
@@ -342,29 +366,11 @@ export function dispose() {
     controls?.dispose()
     geometry?.dispose()
     moonGeometry?.dispose()
-    mirrorMate?.dispose()
-    reflectorBackGeom?.dispose();
-    moonGlassGeom?.dispose();
-    moonGlassMaterial?.dispose();
-    starMaterial?.dispose();
     groundGeom?.dispose()
     material?.dispose()
     material2?.dispose()
     groundMate?.dispose()
     dispMap?.dispose()
     noise3D = null
-    scene.traverse((child) => {
-        if (child.geometry) {
-            child.geometry.dispose();
-        }
-        if (child.material) {
-            child.material.dispose();
-        }
-    });
-    lightS?.dispose()
-    pointLight?.dispose()
-    pointLight2?.dispose()
-    camera = null;
-    mirrorBack = null;
     window.removeEventListener('resize', onWindowResize)
 }
