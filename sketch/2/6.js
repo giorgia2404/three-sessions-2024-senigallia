@@ -141,18 +141,25 @@ export function sketch() {
     let moon
     geometry = new THREE.SphereGeometry(1, 48, 48)
     dispMap = textures[6].texture
-    material2 = new THREE.MeshPhysicalMaterial({
-        //color: 0xFFFFFF, 
-        color: 0xffffff,
-        //opacity: 0.5 ,
-        transmoon: false,
+    let material2 =  new THREE.MeshPhysicalMaterial({
+        transmission: 1,
+        //opacity: 0.5,
+        transparent: true,
         map: textures[5].texture,
-        bumpMap: dispMap,
-        bumpScale: 0.015,
-        roughness: 1,
-        metalness: 0,
-        fog: false
-
+        envMapIntensity: 4,
+        color: 0xffffff,
+        envMap: cubeTextures[0].texture,
+        reflectivity: 0.8,
+        transmission: 1.0,
+        roughness: 1.0,
+        metalness: 0.8,
+        clearcoat: 1,
+        clearcoatRoughness: 0.01,
+       // ior: 1,
+        thickness: .2,
+        fog: false,
+       side: THREE.DoubleSide
+   
    
    
    
