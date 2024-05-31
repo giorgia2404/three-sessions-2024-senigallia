@@ -650,10 +650,10 @@ export function dispose() {
     action.stop();
     action = null;
   }
-  rectLight.dispose();
-  rectLightHelper.dispose();
-  light.dispose();
-  scene = null;
+  rectLight?.dispose();
+  rectLightHelper?.dispose();
+  light?.dispose();
+  // scene = null;
   camera = null;
   if (directorTimeOut) {
     clearTimeout(directorTimeOut);

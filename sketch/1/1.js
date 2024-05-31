@@ -80,7 +80,7 @@ export function sketch() {
         color: 0x444444,
         envMap: cubeTextures[0].texture,
         side: THREE.DoubleSide,
-        combine: THREE.addOperation,
+        // combine: THREE.addOperation,
         reflectivity: 1,
         // specular: 0x999999,
         fog: true
@@ -251,11 +251,9 @@ export function dispose() {
             child.material.dispose();
         }
     });
-    scene.remove(light)
-    light = null
-    scene.remove(lightD)
-    lightD = null
-    scene = null;
+    light?.dispose()
+    lightD?.dispose()
+    // scene = null;
     camera = null;
     // gui?.destroy()
     // ...
