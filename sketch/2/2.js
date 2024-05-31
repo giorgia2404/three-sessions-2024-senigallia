@@ -260,7 +260,7 @@ export function sketch() {
     scene.add(pointLight)
     pointLight2 = new THREE.PointLight(0xffffff, .1)
     pointLight2.position.set(-30, 20, -20)
-    scene.add(pointLight2) */
+    scene.add(pointLight2) 
     // const ambientLight = new THREE.AmbientLight(0xffffff)
     // scene.add(ambientLight)
 

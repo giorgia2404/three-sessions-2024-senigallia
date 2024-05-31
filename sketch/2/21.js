@@ -121,7 +121,7 @@ export function sketch() {
         transmission: 1.0,
         roughness: 0.0,
         // metalness: 0.1,
-        clearcoat: 0.1,
+        // clearcoat: 0.1,
         // clearcoatRoughness: 0.01,
         // ior: 1,
         thickness: .2,
@@ -140,40 +140,28 @@ export function sketch() {
     // moon
     let moon
     geometry = new THREE.SphereGeometry(1, 48, 48)
-    dispMap = textures[6].texture
-    let material2 =  new THREE.MeshPhysicalMaterial({
-        transmission: 1,
-        opacity: 0.5,
-        transparent: true,
-        map: textures[5].texture,
-        envMapIntensity: 4,
-        color: 0xffffff,
-        envMap: cubeTextures[0].texture,
-        reflectivity: 0.8,
-        transmission: 1.0,
-        roughness: 1.0,
-        clearcoat: 1,
-        clearcoatRoughness: 0.01,
-       // ior: 1,
-        thickness: .2,
-        fog: false,
-       side: THREE.DoubleSide
-   
-   
-   
-   
-   /* material2 = new THREE.MeshPhysicalMaterial({
+    dispMap = textures[4].texture
+    material2 = new THREE.MeshPhysicalMaterial({
         //color: 0xFFFFFF, 
         color: 0xffffff,
         //opacity: 0.5 ,
         transmoon: false,
-        map: textures[5].texture,
+        map: textures[3].texture,
+        envMap: cubeTextures[0].texture,
+        combine: THREE.addOperation,
+        displacementMap: dispMap,
+        displacementScale: 0.02,
+        displacementBias: 0.0,
         bumpMap: dispMap,
-        bumpScale: 0.015,
-        roughness: 1,
+        bumpScale: 0.01,
+        roughness: 0.01,
+        metalness: 1,
+        shininess: 100,
+        reflectivity: 1,
+        transmission: 0.5,
+       // thickness: .2,
         metalness: 0,
-        fog: false*/
-
+        fog: false
     })
     dispMap.wrapS = dispMap.wrapT = THREE.RepeatWrapping
     // dispMap.repeat.set(1, 1)
