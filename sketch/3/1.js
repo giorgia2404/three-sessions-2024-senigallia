@@ -2,9 +2,12 @@
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let scene, animation, onWindowResize, controls, onMouseMove
-let groundGeom
+let scene, camera, animation, onWindowResize, controls
+let groundGeom, lanceGeometry
+const lances = []
 let groundMate, lanceMate, fireFlyMate
+let fireFlyGeom, fireFlyLight
+let light, lightD, ambientLight
 let world
 let noise3D
 let flowField
@@ -60,7 +63,7 @@ export function sketch() {
     let paused = false;
 
     // CAMERA
-    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
     camera.position.copy(p.cameraPosition)
     camera.lookAt(p.lookAtCenter)
 
@@ -88,8 +91,8 @@ export function sketch() {
         roughness: 1,
         metalness: 0,
         fog: true,
-        transparent: true,
-        opacity: .5
+        // transparent: true,
+        // opacity: .5
 
     })
     fireFlyMate = new THREE.MeshStandardMaterial({
@@ -155,8 +158,7 @@ export function sketch() {
     const spacingVariability = p.spacingVariability // .5;
     const baseDiam = p.baseDiam
     const topDiam = p.topDiam
-    const lanceGeometry = new THREE.CylinderGeometry(topDiam, baseDiam, lanceLength, 16);
-    const lances = [];
+    lanceGeometry = new THREE.CylinderGeometry(topDiam, baseDiam, lanceLength, 16);
 
     for (let i = 0; i < numRows; i++) {
         for (let j = 0; j < numCols; j++) {
@@ -209,10 +211,10 @@ export function sketch() {
     }
 
     // FIREFLIES
-    const fireFlyGeom = new THREE.SphereGeometry(.005, 10, 2)
+    fireFlyGeom = new THREE.SphereGeometry(.005, 10, 2)
     const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate)
-    const fireFlyLight = new THREE.PointLight(0xFFC702, 3, 2); 
-    fireFlyLight.castShadow = true; 
+    fireFlyLight = new THREE.PointLight(0xFFC702, 3, 2);
+    fireFlyLight.castShadow = true;
     scene.add(fireFlyLight);
     scene.add(fireFly)
 
@@ -220,7 +222,7 @@ export function sketch() {
     let lightIntensity
     if (p.night) lightIntensity = .5
     else lightIntensity = 4
-    const light = new THREE.DirectionalLight(0xffffff, lightIntensity)
+    light = new THREE.DirectionalLight(0xffffff, lightIntensity)
     light.position.set(10, 20, -20)
     light.target.position.set(0, 0, 0)
     light.castShadow = true
@@ -234,12 +236,12 @@ export function sketch() {
     const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
-    const lightD = new THREE.DirectionalLight(0xffffff, 10)
+    lightD = new THREE.DirectionalLight(0xffffff, 10)
     lightD.position.set(-4, 0, -5)
     lightD.target.position.set(0, 4, 0)
     // scene.add(lightD)
 
-    const ambientLight = new THREE.AmbientLight(0xffffff)
+    // ambientLight = new THREE.AmbientLight(0xffffff)
     // scene.add(ambientLight)
 
     // NOISE
@@ -249,7 +251,7 @@ export function sketch() {
     // Parametri del flowfield
     let num
     if (numRows >= numCols) num = numRows
-    else num = numCols 
+    else num = numCols
     const flowfieldResolution = Math.floor(num);
     const flowfieldScale = 0.1;
 
@@ -279,9 +281,9 @@ export function sketch() {
 
             // Verifica che gli indici siano all'interno dei limiti del flowfield
             // if (cellX >= 0 && cellX < flowfieldResolution && cellZ >= 0 && cellZ < flowfieldResolution) {
-                const windDirection = flowField[cellX][cellZ];
-                const windForce = windDirection.scale(windStrength);
-                lance.body.applyForce(windForce, new CANNON.Vec3(0, 1, 0));
+            const windDirection = flowField[cellX][cellZ];
+            const windForce = windDirection.scale(windStrength);
+            lance.body.applyForce(windForce, new CANNON.Vec3(0, 1, 0));
             // }
         }
     }
@@ -342,9 +344,26 @@ export function dispose() {
     lanceMate?.dispose()
     groundGeom?.dispose()
     groundMate?.dispose()
+    lanceGeometry?.dispose()
+    lances.forEach((lance) => {
+        world.removeBody(lance.body);
+        // lance.body.shapes.forEach((shape) => {
+        //     shape.dispose();
+        // });
+    });
+    world.constraints.forEach((constraint) => {
+        world.removeConstraint(constraint);
+    });
     world = null
     noise3D = null
     flowField = null
+    fireFlyGeom?.dispose();
+    fireFlyMate?.dispose();
+    fireFlyLight?.dispose();
+    light?.dispose();
+    lightD?.dispose();
+    ambientLight?.dispose();
+    camera = null
     window?.removeEventListener('resize', onWindowResize)
     // window?.removeEventListener('mousemove', onMouseMove)
 }
