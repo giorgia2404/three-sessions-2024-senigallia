@@ -1,18 +1,69 @@
-// CILINDRI CHE OSCILLANO
+//PROVA CON LUCCIOLE OK
 
-let onWindowResize;
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { Reflector } from 'three/examples/jsm/objects/Reflector'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-
+let scene, animation, onWindowResize, controls, onMouseMove
+let groundGeom
+let groundMate, lanceMate, fireFlyMate
+let world
+let noise3D
+let flowField
 
 export function sketch() {
 
-   // CAMERA
-    let camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 5;
-    camera.position.y = 3;
-  
+    const p = {
+        // lights
+        night: false,
+        // lance
+        lanceLength: 1 + Math.random() * 4,
+        baseDiam: .04,
+        topDiam: 0,
+        numRows: 1 + Math.floor(Math.random() * 10),
+        numCols: 1 + Math.floor(Math.random() * 10),
+        spacing: .2 + Math.random() * .7,
+        spacingVariability: Math.random(),
+        lanceMass: 1,
+        // view
+        lookAtCenter: new THREE.Vector3(0, 0, 0),
+        cameraPosition: new THREE.Vector3(0, -0.9, - 3 - Math.random() * 2),
+        autoRotate: true,
+        autoRotateSpeed: -.2 + Math.random() * .4,
+        camera: 35,
+        // fireflies
+        numfireflies: 10,
+        fireFlySpeed: .1,
+        // world
+        background: new THREE.Color(0x000000),
+        gravity: 20,
+        wind: true,
+        windStrength: .1 + Math.random() * .2,
+        floor: -1,
+    };
+
+    //debug random night/day
+    if (Math.random() > .5) p.night = true
+
+    let lanceColor
+    let groundColor
+    if (!p.night) {
+        p.background = new THREE.Color(0xaaaaaa)
+        lanceColor = new THREE.Color(0x000000)
+        groundColor = new THREE.Color(0x333333)
+    } else {
+        p.background = new THREE.Color(0x000000)
+        lanceColor = new THREE.Color(0xcccccc)
+        groundColor = new THREE.Color(0x666666)
+    }
+
+    // other parameters
+    let near = 0.2, far = 1000;
+    let shadowMapWidth = 2048, shadowMapHeight = 2048;
+    let paused = false;
+
+    // CAMERA
+    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    camera.position.copy(p.cameraPosition)
+    camera.lookAt(p.lookAtCenter)
 
     // WINDOW RESIZE
     onWindowResize = () => {
@@ -22,213 +73,282 @@ export function sketch() {
     };
     window.addEventListener('resize', onWindowResize);
 
-
     // SCENE
-
-    const debugObject = {
-        waveDepthColor: "#1e4d40",
-        waveSurfaceColor: "#4d9aaa",
-        fogNear: 3,
-        fogFar: 10,
-        fogColor: "#8e99a2"
-    };
-
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(
-        debugObject.fogColor,
-        debugObject.fogNear,
-        debugObject.fogFar
-    );
-    // scene.background = new THREE.Color(debugObject.fogColor);
-
-    // Load EXR texture
-//   const exrLoader = new EXRLoader();
-//   exrLoader.load('./assets/textures/bosco4.exr', function(texture) {
-//     texture.mapping = THREE.EquirectangularReflectionMapping;
-//     scene.environment = texture;
-//     scene.background = texture;
-//   });
-
-
-    // Point light
-    const light1 = new THREE.PointLight(0xffffff, 10);
-    light1.castShadow = true;
-    scene.add(light1);
-
-    /*const ambientLight = new THREE.AmbientLight(0xFFFFFF, 1); // Soft white light con intensità 1
-    scene.add(ambientLight);*/
-
-    const pointLight = new THREE.PointLight(0xFFFFFF, 0.5); // Luce direzionale con intensità 2
-    pointLight.position.set(2.5, 2.5, 2.5); // Posiziona la luce sopra la scena
-    pointLight.castShadow = true; // Abilita la creazione di ombre
-    scene.add(pointLight);
-
-
-    // REFLECTIVE FLOOR
-
-    // Creare il riflettore
-    const refe = new Reflector(new THREE.PlaneGeometry(25, 15), {
-         clipBias: 0.003,
-         textureWidth: window.innerWidth * window.devicePixelRatio,
-         extureHeight: window.innerHeight * window.devicePixelRatio,
-         color: 0x777777
-     });
-     refe.rotateX(-Math.PI / 2); 
-     refe.position.x = 6;
-     scene.add(refe);
-
-    // Creare il materiale opaco trasparente
-    const planeMaterial = new THREE.MeshLambertMaterial({
-    color: 0x888888,
-    transparent: true,
-    opacity: 0.8
+    scene = new THREE.Scene()
+    scene.background = p.background
+    scene.fog = new THREE.Fog(scene.background, 2, 20)
+    world = new CANNON.World({
+        gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
+    // world.broadphase = new CANNON.NaiveBroadphase();
+    world.solver.iterations = 10
 
-    // Creare il secondo piano leggermente sopra il riflettore
-    const planeGeometry = new THREE.PlaneGeometry(25, 15);
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.rotateX(-Math.PI / 2);
-    plane.position.y += 0.01;  // Posiziona leggermente sopra il riflettore
-    plane.position.x += 6; 
-    plane.receiveShadow = true;
-    scene.add(plane);
+    // MATERIALS
+    groundMate = new THREE.MeshStandardMaterial({
+        color: groundColor,
+        roughness: 1,
+        metalness: 0,
+        fog: true,
 
+    })
+    fireFlyMate = new THREE.MeshStandardMaterial({
+        color: 0xFFC702,
+        emissive: 0xFFC702,
+        roughness: 1,
+        metalness: 0,
+        fog: false,
 
-    const orbitControls = new OrbitControls(camera, renderer.domElement)
-    orbitControls.enableDamping = true
-    orbitControls.target.set(0, 1, 0)
+    })
+    lanceMate = new THREE.MeshPhongMaterial({
+        color: lanceColor,
+        envMap: cubeTextures[0].texture,
+        // emissive: 0xffffff,
+        // side: THREE.DoubleSide,
+        // combine: THREE.addOperation,
+        // reflectivity: .3,
+        // flatShading: true,
+        // shininess: 100,
+        // specular: 0xffffff,
+        fog: true
+    })
 
-    light1.shadow.mapSize.width = 1024;
-    light1.shadow.mapSize.height = 1024;
-    light1.shadow.camera.near = 0.1;
-    light1.shadow.camera.far = 100;
-    pointLight.shadow.mapSize.width = 1024;
-    pointLight.shadow.mapSize.height = 1024;
-    pointLight.shadow.camera.near = 0.1;
-    pointLight.shadow.camera.far = 100;
-
-    const mirrorBack1 = new Reflector(new THREE.PlaneGeometry(25, 15), {
-        color: new THREE.Color(0x7f7f7f),
-        textureWidth: window.innerWidth * window.devicePixelRatio,
-        textureHeight: window.innerHeight * window.devicePixelRatio,
-    });
-
-    mirrorBack1.position.y = 7.5;
-    mirrorBack1.position.z = -6;
-    mirrorBack1.position.x = 6;
-    scene.add(mirrorBack1);
-
-
-
-
-    // CYLINDERS
-    const cylinderGeometry = new THREE.CylinderGeometry(0.01, 0.05, 10, 15);
-    const cylinderMaterial = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        emissive: 0x202020,
-        emissiveIntensity: 2.0,
-        roughness: 0.5,
-        metalness: 0.1,
-    });
-
-    const cylinderSpacingX = 0.5;
-    const cylinderSpacingZ = 3;
-
-    let arrayCilindri = [];
-
-    for (let j = 0; j < 4; j++) {
-        arrayCilindri[j] = [];
-        for (let i = 0; i < 40; i++) {
-            const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
-            // Posiziona il cilindro in modo che la sua base inferiore aderisca esattamente al piano
-            cylinder.position.set(i * cylinderSpacingX - 6.5 * cylinderSpacingX, 5, j * cylinderSpacingZ - 1.5 * cylinderSpacingZ);
-            cylinder.castShadow = true;
-            scene.add(cylinder);
-            arrayCilindri[j][i] = cylinder;
-        }
-    }
-
-    
-
-    // CANNON.js SETUP
-    const world = new CANNON.World();
-    world.gravity.set(-0.3, 9.81, 0.3);
-    world.broadphase = new CANNON.NaiveBroadphase();
-    world.solver.iterations = 10;
-
-    const fixedBody = new CANNON.Body({
+    // Static ground plane
+    groundGeom = new THREE.PlaneGeometry(20, 20)
+    let ground = new THREE.Mesh(groundGeom, groundMate)
+    ground.position.set(0, p.floor, 0)
+    ground.rotation.x = - Math.PI / 2
+    ground.scale.set(100, 100, 100)
+    ground.castShadow = false
+    ground.receiveShadow = true
+    scene.add(ground)
+    const groundBody = new CANNON.Body({
+        position: new CANNON.Vec3(0, p.floor - 0.1, 0),
         mass: 0,
-        position: new CANNON.Vec3(0, 0, 0),
+        shape: new CANNON.Plane(),
     });
-    world.addBody(fixedBody);
+    // xxx body has a bug with point lance point constraints... 
+    // groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+    // groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+    // world.addBody(groundBody);
+    // ground.position.copy(groundBody.position);
+    // ground.quaternion.copy(groundBody.quaternion);
 
-    const cylinderBodies = [];
-    const cylinderShape = new CANNON.Cylinder(0.01, 0.05, 10, 15);
-    const mass = 1;
+    // CONTROLS
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 2;
+    controls.maxDistance = 6;
+    controls.maxPolarAngle = Math.PI / 2 + 0.15;
+    controls.minPolarAngle = -Math.PI;
+    controls.autoRotate = p.autoRotate;
+    controls.autoRotateSpeed = p.autoRotateSpeed;
+    controls.target = p.lookAtCenter;
 
-    for (let j = 0; j < 4; j++) {
-        for (let i = 0; i < 40; i++) {
-            const cylinderBody = new CANNON.Body({
-                mass: mass,
-                position: new CANNON.Vec3(i * cylinderSpacingX - 6.5 * cylinderSpacingX, 5, j * cylinderSpacingZ - 1.5 * cylinderSpacingZ),
-            });
-            cylinderBody.addShape(cylinderShape);
-            world.addBody(cylinderBody);
-            cylinderBodies.push(cylinderBody);
+    // FOREST
+    const lanceLength = p.lanceLength // 5
+    const numRows = p.numRows // 3 + Math.random() * 5;
+    const numCols = p.numCols // 3 + Math.random() * 5;
+    const spacing = p.spacing // .3 + Math.random() * .7;
+    const spacingVariability = p.spacingVariability // .5;
+    const baseDiam = p.baseDiam
+    const topDiam = p.topDiam
+    const lanceGeometry = new THREE.CylinderGeometry(topDiam, baseDiam, lanceLength, 16);
+    const lances = [];
 
-            const constraint = new CANNON.PointToPointConstraint(cylinderBody, new CANNON.Vec3(0, -5, 0), fixedBody, new CANNON.Vec3(i * cylinderSpacingX - 6.5 * cylinderSpacingX, 0, j * cylinderSpacingZ - 1.5 * cylinderSpacingZ));
-            world.addConstraint(constraint);
-        }
-    }
-
-    
-    // Funzione per applicare forze casuali ai cilindri
-    function applyRandomForces() {
-        for (let i = 0; i < cylinderBodies.length; i++) {
-            const body = cylinderBodies[i];
-            const force = new CANNON.Vec3(
-                (Math.random() - 0.5) * 0.01,
-                0,
-                (Math.random() - 0.5) * 0.01
+    for (let i = 0; i < numRows; i++) {
+        for (let j = 0; j < numCols; j++) {
+            const lance = new THREE.Mesh(lanceGeometry, lanceMate);
+            lance.castShadow = true;
+            lance.position.set(
+                (j - (numCols - 1) / 2) * spacing - (Math.random() * spacing / 2 * spacingVariability),
+                p.floor,
+                (i - (numRows - 1) / 2) * spacing + (Math.random() * spacing / 2 * spacingVariability)
             );
-            body.applyForce(force, body.position);
+            scene.add(lance);
+
+            const lanceShape = new CANNON.Cylinder(0.01, 0.05, lanceLength, 8);
+            const lanceBody = new CANNON.Body({ mass: p.lanceMass });
+            lanceBody.addShape(lanceShape);
+            lanceBody.position.copy(lance.position);
+            world.addBody(lanceBody);
+
+            // Crea un corpo fisico statico per l'ancoraggio al terreno
+            const anchorBody = new CANNON.Body({ mass: 0 });
+            anchorBody.position.set(lance.position.x, p.floor, lance.position.z);
+            world.addBody(anchorBody);
+
+            // Aggiungi un vincolo a cerniera tra la base della lancia e l'ancoraggio al terreno
+            // const constraint = new CANNON.HingeConstraint(lanceBody, anchorBody, {
+            //     pivotA: new CANNON.Vec3(0, - lanceLength / 2, 0),
+            //     pivotB: new CANNON.Vec3(0, 0, 0),
+            //     axisA: new CANNON.Vec3(1, 0, 0),
+            //     axisB: new CANNON.Vec3(0, 0, 1),
+            // });
+            // Aggiungi il vincolo tra il cilindro e il corpo fisso
+            const constraint = new CANNON.PointToPointConstraint(
+                lanceBody,
+                new CANNON.Vec3(0, - lanceLength / 2, 0),
+                anchorBody,
+                new CANNON.Vec3(0, 0, 0),
+            )
+            world.addConstraint(constraint);
+
+            lances.push({ mesh: lance, body: lanceBody });
         }
     }
 
-    // Funzione di animazione
-    function animate() {
-        //applyWindForces();
-        requestAnimationFrame(animate);
-        applyRandomForces()
-    
-        // Step di simulazione del mondo fisico
-        world.step(1 / 60, 10);
-    
-        // Aggiorna le posizioni dei cilindri Three.js in base alle posizioni dei corpi Cannon.js
-        for (let j = 0; j < 4; j++) {
-            for (let i = 0; i < 40; i++) {
-                const cylinder = arrayCilindri[j][i];
-                const body = cylinderBodies[j * 40 + i];
-                if (cylinder && body) {
-                    cylinder.position.copy(body.position);
-                    cylinder.quaternion.copy(body.quaternion);
-                }
+    // Funzione per aggiornare la posizione delle lance
+    function updateLances() {
+        for (const lance of lances) {
+            lance.mesh.position.copy(lance.body.position);
+            lance.mesh.quaternion.copy(lance.body.quaternion);
+        }
+    }
+
+    // FIREFLIES
+    const arrayfireflies = []
+
+    for (let i = 0; i < p.numfireflies; i++) {
+        const fireFlyGeom = new THREE.SphereGeometry(.005, 10, 2);
+        const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate);
+        const fireFlyLight = new THREE.PointLight(0xFFC702, 3, 1);
+        fireFlyLight.castShadow = true; // Abilita la creazione di ombre
+        arrayfireflies.push(fireFly);
+        fireFly.add(fireFlyLight);
+       //scene.add(fireFlyLight)
+        scene.add(fireFly)
+    }
+
+    // LIGHTS
+    let lightIntensity
+    if (p.night) lightIntensity = .5
+    else lightIntensity = 4
+    const light = new THREE.DirectionalLight(0xffffff, lightIntensity)
+    light.position.set(10, 20, -20)
+    light.target.position.set(0, 0, 0)
+    light.castShadow = true
+    light.shadow.radius = 2
+    light.shadow.camera.near = 2
+    light.shadow.camera.far = 200
+    light.shadow.bias = 0.0001
+    light.shadow.mapSize.width = shadowMapWidth
+    light.shadow.mapSize.height = shadowMapHeight
+    scene.add(light)
+    const lightHelper = new THREE.DirectionalLightHelper(light, 5);
+    // scene.add(lightHelper);
+
+    const lightD = new THREE.DirectionalLight(0xffffff, 10)
+    lightD.position.set(-4, 0, -5)
+    lightD.target.position.set(0, 4, 0)
+    // scene.add(lightD)
+
+    const ambientLight = new THREE.AmbientLight(0xffffff)
+    // scene.add(ambientLight)
+
+    // NOISE
+    noise3D = NOISE.createNoise3D()
+    let t0 = Math.random() * 10
+
+    // Parametri del flowfield
+    const flowfieldResolution = Math.floor(numRows * numCols);
+    const flowfieldScale = 0.1;
+
+    // Funzione per generare il flowfield utilizzando noise3D
+    function generateFlowfield() {
+        flowField = new Array(flowfieldResolution);
+
+        for (let i = 0; i < flowfieldResolution; i++) {
+            flowField[i] = new Array(flowfieldResolution);
+            for (let j = 0; j < flowfieldResolution; j++) {
+                const x = i * flowfieldScale;
+                const z = j * flowfieldScale;
+                const noise = noise3D(x, 0, z);
+                const angle = noise * Math.PI * 2;
+                flowField[i][j] = new CANNON.Vec3(Math.cos(angle), 0, Math.sin(angle));
             }
         }
-    
-        orbitControls.update();
-        render();
     }
 
-    function render() {
-        renderer.render(scene, camera);
+    // Funzione per simulare il vento con il flowfield
+    function simulateWindWithFlowfield() {
+        const windStrength = -p.windStrength; // Riduce l'intensità del vento
+        for (const lance of lances) {
+            const position = lance.body.position;
+            const cellX = Math.floor((position.x + 10) / 20 * flowfieldResolution);
+            const cellZ = Math.floor((position.z + 10) / 20 * flowfieldResolution);
+
+            // Verifica che gli indici siano all'interno dei limiti del flowfield
+            if (cellX >= 0 && cellX < flowfieldResolution && cellZ >= 0 && cellZ < flowfieldResolution) {
+                const windDirection = flowField[cellX][cellZ];
+                const windForce = windDirection.scale(windStrength);
+                lance.body.applyForce(windForce, new CANNON.Vec3(0, 1, 0));
+            }
+        }
     }
 
-    animate();
+    generateFlowfield();
 
+    // ANIMATE
+    const timeStep = 1 / 60
+    const stepsPerFrame = 1
+    let lastCallTime
+
+    const animate = () => {
+        if (showStats) stats.begin();
+
+        // ANIMATION
+        if (!paused) {
+
+            const t = performance.now() / 1000
+
+            if (!lastCallTime) {
+                for (let i = 0; i < stepsPerFrame; i++) {
+                    world.step(timeStep);
+                }
+            } else {
+                const dt = t - lastCallTime;
+                const numSteps = Math.ceil(dt / timeStep);
+                for (let i = 0; i < numSteps; i++) {
+                    world.step(timeStep);
+                }
+            }
+            lastCallTime = t
+
+            // CANNON SIMULATION
+            if (p.wind) {
+                simulateWindWithFlowfield();
+            }
+            updateLances();
+
+            for (let i = 0; i < p.numfireflies; i++) {
+                const t2 = t * p.fireFlySpeed + 10;
+                arrayfireflies[i].position.x = -1 + noise3D(0, t2 + i, 0) * 2;
+                arrayfireflies[i].position.y = -.4 + noise3D(t2 + i + 4, 0, 0) * .8;
+                arrayfireflies[i].position.z = -1 + noise3D(0, 0, t2 - i + 8) * 2;
+                arrayfireflies[i].position.copy(arrayfireflies[i].position);
+            }
+        }
+
+        controls.update()
+        renderer.render(scene, camera)
+        if (showStats) stats.end()
+
+        animation = requestAnimationFrame(animate)
+    };
+    animate()
 }
 
-
 export function dispose() {
-    window?.removeEventListener('resize', onWindowResize);
+    cancelAnimationFrame(animation)
+    controls?.dispose()
+    lanceMate?.dispose()
+    groundGeom?.dispose()
+    groundMate?.dispose()
+    world = null
+    noise3D = null
+    flowField = null
+    window?.removeEventListener('resize', onWindowResize)
+    // window?.removeEventListener('mousemove', onMouseMove)
 }

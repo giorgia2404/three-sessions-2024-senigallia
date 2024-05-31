@@ -1,4 +1,4 @@
-// MIRROR/CASLTLE - PRIMER
+//steadyCam
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
@@ -6,12 +6,11 @@ import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
 import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 
-let scene, camera
+let scene
 let groundMate, mirrorMate
 let groundGeom, stepSideGeom, reflectorBackGeom
-const ramps = []
 let mirrorBack // reflector
-let animation, light, lightD
+let animation
 let onWindowResize
 let noise3D
 // let gui
@@ -42,9 +41,10 @@ export function sketch() {
     // other parameters
     let near = 0.2, far = 200
     let shadowMapWidth = 2048, shadowMapHeight = 2048
+    let paused = false
 
     // CAMERA
-    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
     camera.position.copy(p.cameraPosition)
     camera.lookAt(p.lookAtCenter)
 
@@ -80,7 +80,7 @@ export function sketch() {
         color: 0x444444,
         envMap: cubeTextures[0].texture,
         side: THREE.DoubleSide,
-        // combine: THREE.addOperation,
+        combine: THREE.addOperation,
         reflectivity: 1,
         // specular: 0x999999,
         fog: true
@@ -133,6 +133,7 @@ export function sketch() {
 
     let minSteps = 5
     let maxStepsDelta = 10
+    const ramps = []
     for (let r = 0; r < 3; r++) {
         const steps = new THREE.Group
         const rampSteps = minSteps + Math.random() * maxStepsDelta
@@ -170,7 +171,7 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
 
-    light = new THREE.DirectionalLight(0xffffff, 10)
+    const light = new THREE.DirectionalLight(0xffffff, 10)
     light.position.set(0, 2, -5)
     // light.target = cube
     light.castShadow = true
@@ -184,7 +185,7 @@ export function sketch() {
     // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
-    lightD = new THREE.DirectionalLight(0xffffff, 1)
+    const lightD = new THREE.DirectionalLight(0xffffff, 1)
     light.position.set(0, 3, -3)
     light.target.position.set(0, 0, 0)
     scene.add(lightD)
@@ -204,27 +205,80 @@ export function sketch() {
     // nameFolder.open()
     // ...
 
+
+    // valori di partenza
+   /* const steadycamFlowSpeed = .02; // Adjust this value to change the speed of the steadycam flow
+    const steadycamFlowAmplitude = 0.01; // Adjust this value to change the amplitude of the steadycam flow
+    let steadycamFlowTime = 0;
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
+    const steadycamBounds = {
+        x: { min: -2.5, max: 2.5 },
+        y: { min: 0, max: 1.5 },
+        z: { min: -15, max: -4 }
+    }; */
+
+    const steadycamFlowSpeed = 0.1; // Aumentato il valore per una maggiore velocità
+    const steadycamFlowAmplitude = 0.1; // Aumentato il valore per una maggiore ampiezza
+    let steadycamFlowTime = 0;
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
+    const steadycamBounds = {
+    x: { min: -5, max: 5 }, // Allargati i limiti sull'asse x
+    y: { min: 0, max: 3 }, // Allargati i limiti sull'asse y
+    z: { min: -20, max: -3 } // Allargati i limiti sull'asse z
+    };
+
     noise3D = NOISE.createNoise3D()
     const t0 = Math.random() * 10
+    const clock = new THREE.Clock()
 
     // ANIMATE
     const animate = () => {
         if (showStats) stats.begin() // XXX
+        if (!paused) {
 
-        if (p.animate) {
-            // ANIMATION
             const t = t0 + performance.now() * 0.0001
+            let dt = clock.getDelta()
+
+            // ANIMATION
             const t1 = t * p.lightSpeed + 0
             const t2 = t1 + 10
             camera.position.set(noise3D(t1, 0, 0) * 2, noise3D(0, t1 + 4, 0) * 1, -6)
             controls.target.set(noise3D(t2, 0, 0) * 2, 1, noise3D(0, t2 + 4, 0) * 2)
             // ...
+
+            // Update steadycam flow time
+            steadycamFlowTime += dt * steadycamFlowSpeed;
+
+            // Calculate steadycam flow offsets using noise functions
+            const steadycamFlowX = noise3D(steadycamFlowTime, 0, 0) * steadycamFlowAmplitude;
+            const steadycamFlowY = noise3D(0, steadycamFlowTime, 0) * steadycamFlowAmplitude;
+            const steadycamFlowZ = noise3D(0, 0, steadycamFlowTime) * steadycamFlowAmplitude;
+
+            // Apply steadycam flow to camera position if not in drag mode
+            if (!controls.isDragging) {
+                // const cameraPosition = controls.object.position.clone();
+                // cameraPosition.add(new THREE.Vector3(steadycamFlowX, steadycamFlowY, steadycamFlowZ));
+                // controls.object.position.copy(cameraPosition);
+                const cameraPosition = controls.object.position.clone();
+                cameraPosition.add(new THREE.Vector3(steadycamFlowX, steadycamFlowY, steadycamFlowZ));
+
+                // Clamp the camera position within the defined boundaries
+                cameraPosition.x = clamp(cameraPosition.x, steadycamBounds.x.min, steadycamBounds.x.max);
+                cameraPosition.y = clamp(cameraPosition.y, steadycamBounds.y.min, steadycamBounds.y.max);
+                cameraPosition.z = clamp(cameraPosition.z, steadycamBounds.z.min, steadycamBounds.z.max);
+
+                controls.object.position.copy(cameraPosition);
+            }
         }
-        // ...
 
         controls.update()
         renderer.render(scene, camera) // RENDER
         if (showStats) stats.end() // XXX
+
 
         animation = requestAnimationFrame(animate) // CIAK
     }
@@ -241,20 +295,6 @@ export function dispose() {
     mirrorMate?.dispose()
     mirrorBack?.dispose()
     noise3D = null
-    ramps.forEach(ramp => scene.remove(ramp))
-    ramps.length = 0
-    scene.traverse((child) => {
-        if (child.geometry) {
-            child.geometry.dispose();
-        }
-        if (child.material) {
-            child.material.dispose();
-        }
-    });
-    light?.dispose()
-    lightD?.dispose()
-    // scene = null;
-    camera = null;
     // gui?.destroy()
     // ...
     window.removeEventListener('resize', onWindowResize)

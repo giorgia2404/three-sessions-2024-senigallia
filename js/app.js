@@ -346,15 +346,15 @@ loadCubeTexture('PureSky', './assets/textures/cube/PureSky-256/', '.png') // 0
 loadCubeTexture('AbandonedParking', './assets/textures/cube/AbandonedParking-1024/', '.png') // 1
 loadCubeTexture('cloud', './assets/textures/cube/cloud/', '.png') // 2
 loadCubeTexture('TropicalSunnyDay', './assets/textures/cube/TropicalSunnyDay/', '.jpg') // 3
+loadCubeTexture('cielo-scale', './assets/textures/cube/cielo-scale/', '.jpg') // 4
+loadCubeTexture('nuvole-cielo', './assets/textures/cube/Standard-Cube-Map-5/', '.jpg') // 5
 // ...
 // global.textures[n]
 loadTexture('luna_1k_diff', './assets/textures/luna_1k_diff', '.png') // 0
 loadTexture('eye', './assets/models/eye/textures/01___Default_baseColor1', '.jpeg') // 1
 loadTexture('luna_1k_diff', './assets/textures/luna_1k_diff', '.jpg') // 2
-loadTexture('bosco', './assets/textures/bosco4', '.exr') // 3
-loadTexture('table_mountain_2_puresky', './assets/textures/table_mountain_2_puresky_4k', '.exr') //4
-loadTexture('NASA_moon', './assets/textures/moon/moon', '.png') // 5
-loadTexture('NASA_moon_disp', './assets/textures/moon/moon_disp', '.png') // 6
+loadTexture('NASA_moon', './assets/textures/moon/moon', '.png') // 5 > 3
+loadTexture('NASA_moon_disp', './assets/textures/moon/moon_disp', '.png') // 6 > 4
 
 /// ...
 // INIT
