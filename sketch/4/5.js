@@ -2,13 +2,15 @@
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let scene, animation, onWindowResize, controls, onMouseMove
+let scene, camera, animation, onWindowResize, controls, onMouseMove
 let groundGeom
-let groundMate, clothMaterial, mirrorMate
+let groundMate, clothMaterial, mirrorMate, clothGeometry
 let world, groundBody
+let light, lightD, ambientLight
 let noise3D
 let cloth, clothParticles, constraints = []
 let flowField
+const vertices = [];
 
 export function sketch() {
 
@@ -47,7 +49,7 @@ export function sketch() {
     let paused = false;
 
     // CAMERA
-    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
     camera.position.copy(p.cameraPosition)
     camera.lookAt(p.lookAtCenter)
 
@@ -114,7 +116,7 @@ export function sketch() {
     const cHeight = p.clothHeight
     const Nx = p.clothResolution
     const Ny = p.clothResolution
-    const clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny)
+    clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny)
     mirrorMate = new THREE.MeshPhongMaterial({
         color: 0x444444,
         envMap: cubeTextures[0].texture,
@@ -192,7 +194,6 @@ export function sketch() {
     }
 
     // Initialize the vertices of the cloth
-    const vertices = [];
     for (let x = 0; x <= Nx; x++) {
         for (let y = 0; y <= Ny; y++) {
             vertices.push(new THREE.Vector3());
@@ -200,7 +201,7 @@ export function sketch() {
     }
     clothGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices.length * 3), 3));
 
-    const light = new THREE.DirectionalLight(0xffffff, 2)
+     light = new THREE.DirectionalLight(0xffffff, 2)
     light.position.set(0, 15, 0)
     light.target.position.set(0, 2, 0)
     light.castShadow = true
@@ -214,14 +215,14 @@ export function sketch() {
     // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
-    const lightD = new THREE.DirectionalLight(0xffffff, 3)
+     lightD = new THREE.DirectionalLight(0xffffff, 3)
     lightD.position.set(0, 2, 0)
     lightD.target.position.set(0, 8, 0)
     scene.add(lightD)
     const lightHelperD = new THREE.DirectionalLightHelper(lightD, 5);
     // scene.add(lightHelperD);
 
-    // const ambientLight = new THREE.AmbientLight(0xffffff)
+    // ambientLight = new THREE.AmbientLight(0xffffff)
     // scene.add(ambientLight)
 
     // NOISE
@@ -354,25 +355,29 @@ export function sketch() {
 export function dispose() {
     cancelAnimationFrame(animation)
     scene.remove(cloth);
-    clothParticles.forEach((row) => {
+    clothParticles?.forEach((row) => {
         row.forEach((particle) => {
             world.removeBody(particle);
         });
     });
     clothParticles = null;
-    constraints.forEach((constraint) => {
+    constraints?.forEach((constraint) => {
         world.removeConstraint(constraint);
     });
     // constraints = null;
     world.removeBody(groundBody);
+    light?.dispose();
+    lightD?.dispose();
     controls?.dispose()
     clothMaterial?.dispose()
     mirrorMate?.dispose()
     groundGeom?.dispose()
     groundMate?.dispose()
-    world = null
+    clothGeometry?.dispose();
+    // world = null
     noise3D = null
     flowField = null
+    camera = null
     window?.removeEventListener('resize', onWindowResize)
     window?.removeEventListener('mousemove', onMouseMove)
 }

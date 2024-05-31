@@ -1,5 +1,8 @@
 // TAROTS - ALL
 
+// Todo: 
+// - ligth angle for each position and easeout transition (like colors) 
+
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
@@ -19,12 +22,13 @@ let noise3D
 let rectLight, light, rectLightHelper
 let directorTimeOut
 
-const api = { state: 'Walk' };
-
 export function sketch() {
   // console.log("Sketch launched")
 
   actionsToPlay = [
+    // instructions:
+    // kind: 'idle' < actions for idle mode
+    // kind: 'special' < other actions to play randomly with parameters (repetitions, loopInOut, ...)
 
     // idles
     {
@@ -244,7 +248,7 @@ export function sketch() {
     availableColors: [
       0x532B5F, // Violet
       0x9eddec, // Light blue
-      0xffffff, // White
+      0xaaaaaa, // White
       0x0140A6, // Blue
       0xFFC702, // Yellow
       0xFED374, // Light Yellow
@@ -268,7 +272,7 @@ export function sketch() {
     floor: 0,
     // ...
   }
-  
+
   // debug shadowMode
   if (Math.random() > .5) {
     p.shadowMode = !p.shadowMode
@@ -325,17 +329,13 @@ export function sketch() {
   // MATERIALS
   humanMate = new THREE.MeshStandardMaterial()
   humanMate.fog = true
+  humanMate.roughness = .2
+  humanMate.metalness = .9
+  humanMate.flatShading = false
+  humanMate.color = new THREE.Color(0xffffff)
   if (p.shadowMode) {
-    humanMate.color = p.background
-    humanMate.roughness = .5
-    humanMate.metalness = 0
-    humanMate.flatShading = true
   } else {
-    humanMate.color = new THREE.Color(0xffffff)
     humanMate.envMap = cubeTextures[0].texture
-    humanMate.roughness = .2
-    humanMate.metalness = 1
-    humanMate.flatShading = false
   }
   groundMate = new THREE.MeshStandardMaterial({
     color: p.background,
@@ -380,7 +380,8 @@ export function sketch() {
       const size = box.getSize(new THREE.Vector3());
       human.traverse((node) => {
         if (node.isMesh) {
-          if (!p.shadowMode) node.material = humanMate
+          // if (!p.shadowMode) 
+          node.material = humanMate
           node.castShadow = true
           node.receiveShadow = true
         }
@@ -421,9 +422,7 @@ export function sketch() {
       // console.log('An error happened loading the GLTF scene')
     }
   )
-
-  const minDuration = p.idleMinDuration //secs
-  const maxDuration = p.idleMaxDuration
+  const { idleMinDuration, idleMaxDuration } = p;
   let isFirstAction = true
   const playDirector = () => {
 
@@ -503,7 +502,7 @@ export function sketch() {
 
     // Richiama l'azione speciale dopo un intervallo di tempo casuale solo se l'azione corrente è un idle
     if (idleActions.some(action => action.name === activeAction.getClip().name)) {
-      const randSec = minDuration + Math.random() * (maxDuration - minDuration);
+      const randSec = idleMinDuration + Math.random() * (idleMaxDuration - idleMinDuration);
       if (directorTimeOut) {
         clearTimeout(directorTimeOut);
         directorTimeOut = 0;
@@ -651,10 +650,10 @@ export function dispose() {
     action.stop();
     action = null;
   }
-  rectLight.dispose();
-  rectLightHelper.dispose();
-  light.dispose();
-  scene = null;
+  rectLight?.dispose();
+  rectLightHelper?.dispose();
+  light?.dispose();
+  // scene = null;
   camera = null;
   if (directorTimeOut) {
     clearTimeout(directorTimeOut);
