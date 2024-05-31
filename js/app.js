@@ -351,10 +351,8 @@ loadCubeTexture('TropicalSunnyDay', './assets/textures/cube/TropicalSunnyDay/', 
 loadTexture('luna_1k_diff', './assets/textures/luna_1k_diff', '.png') // 0
 loadTexture('eye', './assets/models/eye/textures/01___Default_baseColor1', '.jpeg') // 1
 loadTexture('luna_1k_diff', './assets/textures/luna_1k_diff', '.jpg') // 2
-loadTexture('bosco', './assets/textures/bosco4', '.exr') // 3
-loadTexture('table_mountain_2_puresky', './assets/textures/table_mountain_2_puresky_4k', '.exr') //4
-loadTexture('NASA_moon', './assets/textures/moon/moon', '.png') // 5
-loadTexture('NASA_moon_disp', './assets/textures/moon/moon_disp', '.png') // 6
+loadTexture('NASA_moon', './assets/textures/moon/moon', '.png') // 5 > 3
+loadTexture('NASA_moon_disp', './assets/textures/moon/moon_disp', '.png') // 6 > 4
 
 /// ...
 // INIT
