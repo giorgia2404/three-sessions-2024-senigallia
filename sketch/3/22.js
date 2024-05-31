@@ -17,7 +17,7 @@ export function sketch() {
     const p = {
         lookAtCenter: new THREE.Vector3(0, 0, 0),
         cameraPosition: new THREE.Vector3(25, -25, Math.random() * 75),
-        autoRotate: true,
+        autoRotate: false,
         autoRotateSpeed: 8,//-.5,
         camera: 35,
 
@@ -130,7 +130,7 @@ export function sketch() {
     });
 
     for (let x = 0; x < 300; x++) {
-        const sphereRadius = 0.1+Math.random()*1
+        const sphereRadius = 0.1+Math.random()*2
         const sphereGeometry = new THREE.SphereGeometry(sphereRadius)
         sphereMeshes.push(new THREE.Mesh(sphereGeometry, material))
         sphereMeshes[x].position.x = Math.random() * 100 - 50
@@ -140,7 +140,7 @@ export function sketch() {
         sphereMeshes[x].receiveShadow = true
         scene.add(sphereMeshes[x])
     
-        const sphereShape = new CANNON.Sphere(0.5)
+        const sphereShape = new CANNON.Sphere(sphereRadius)
         sphereBodies.push(new CANNON.Body({ mass: 1 }))
         sphereBodies[x].addShape(sphereShape)
         sphereBodies[x].position.x = sphereMeshes[x].position.x
@@ -154,23 +154,19 @@ export function sketch() {
         sphereBodies.forEach((s) => {
             const v = new CANNON.Vec3()
             v.set(-s.position.x, -s.position.y, -s.position.z).normalize()
-            v.scale(0.4, s.force)
+            v.scale(1, s.force)
             s.applyLocalForce(v)
             s.force.y += s.mass
         })
     })
     
-    const button = {
-        explode: function () {
-            sphereBodies.forEach((s) => {
-                s.force.set(s.position.x, s.position.y, s.position.z).normalize()
-                s.velocity = s.force.scale(Math.random() * 50)
-            })
-        },
+    const explode = () => {
+        sphereBodies.forEach((s) => {
+            s.force.set(s.position.x, s.position.y, s.position.z).normalize()
+            s.velocity = s.force.scale(Math.random() * 50)
+        })
     }
-
-    const gui = new GUI()
-    gui.add(button, 'explode')
+    // XXX 
 
 
     const clock = new THREE.Clock()
