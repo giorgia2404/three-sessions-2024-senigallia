@@ -121,19 +121,25 @@ export function sketch() {
     mergeVertices(parentGeometry)
     let parent
     dispMap = textures[2].texture, 
-    material2 = new THREE.MeshPhysicalMaterial({
-        //color: 0xFFFFFF, 
-        color: 0x9c9c9c,
-        //opacity: 0.5 ,
-        transparent: false,
+    material2 = new THREE.MeshPhongMaterial({
+       // color: 0xFFFFFF, 
+        //color: 0x9c9c9c,
+        opacity: 0.5 ,
         map: textures[0].texture,
+        envMap: cubeTextures[0].texture,
+        combine: THREE.addOperation,
+            reflectivity: 1,
+      //  transparent: false,
+       // map: textures[0].texture,
         displacementMap: dispMap,
         displacementScale: 0.02,
         displacementBias: 0.0,
         bumpMap: dispMap,
         bumpScale: 0.01,
         roughness: 0.01,
-        metalness: 0
+        metalness: 1,
+        shininess: 200,
+        fog: true
       
        
     })
@@ -150,7 +156,7 @@ export function sketch() {
     scene.add(parent)
     // LIGHTS
     
-    const ambientLight = new THREE.AmbientLight(0xffffff)
+    const ambientLight = new THREE.AmbientLight(0xd2d2d2)
     scene.add(ambientLight) 
 
     // LIGHTS
@@ -165,22 +171,22 @@ export function sketch() {
     lightS.shadow.mapSize.height = shadowMapHeight
     scene.add(lightS)*/
  
-    const light = new THREE.DirectionalLight(0xffffff, 1)
+   /* const light = new THREE.DirectionalLight(0xffffff, 1)
     light.position.set(-10, 3, 0)
     light.target.position.set(-10, 0, 0)
     // light.castShadow = true
-    scene.add(light)
+    scene.add(light) */
     // const light2 = new THREE.DirectionalLight(0xffffff, .4)
     // light.position.set(-10, 3, 0)
     // light.target.position.set(-5, 0, 0)
     // light.castShadow = true
     // scene.add(light2)
-    const pointLight = new THREE.PointLight(0xffffff, 2)
+   /* const pointLight = new THREE.PointLight(0xffffff, 2)
     pointLight.position.set(70, 10, 20)
     scene.add(pointLight)
     const pointLight2 = new THREE.PointLight(0xffffff, .1)
     pointLight2.position.set(-30, 20, -20)
-    scene.add(pointLight2)
+    scene.add(pointLight2) */
     // const ambientLight = new THREE.AmbientLight(0xffffff)
     // scene.add(ambientLight)
  
