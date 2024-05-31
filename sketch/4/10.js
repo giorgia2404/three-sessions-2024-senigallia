@@ -21,23 +21,23 @@ export function sketch() {
 
     const p = {
         // cloth
-        clothWidth: 10,
-        clothHeight: 10,
-        clothResolution: 17,
-        clothElasticity: 1,
+        clothWidth: 14,
+        clothHeight: 14,
+        clothResolution: 12,
+        clothElasticity: .5,
         // view
-        lookAtCenter: new THREE.Vector3(0, 4, 0),
-        cameraPosition: new THREE.Vector3(-10 + Math.random() * 20, 0, 20),
+        lookAtCenter: new THREE.Vector3(0, 6, 0),
+        cameraPosition: new THREE.Vector3(-10, 2, 20),
         autoRotate: true,
         autoRotateSpeed: -1.5 + Math.random() * 3,
         camera: 35,
         // world
         background: new THREE.Color(0x000000),
         clothMass: 1,
-        gravity: -Math.random() * .7,
+        gravity: 0, //  -Math.random() * .2,
         wind: true,
-        windStrength1: 0.5 + Math.random() * .2,
-        windStrength2: 0.9 + Math.random() * .2,
+        windStrength: 0.5 + Math.random() * .2,
+        // windStrength2: 0.9 + Math.random() * .2,
         mouse: false,
         floor: 0,
     };
@@ -67,7 +67,7 @@ export function sketch() {
     world = new CANNON.World({
         gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
-    world.solver.iterations = 14;
+    world.solver.iterations = 20;
 
     // MATERIALS
     groundMate = new THREE.MeshStandardMaterial({
@@ -129,12 +129,16 @@ export function sketch() {
     cloth.castShadow = true;
     scene.add(cloth);
 
-    const cYstarting = p.floor + cHeight / 2 + Math.random() * cHeight / 2;
+    const contactResolution = 1
+    const cYstarting = p.floor + cHeight / 2 // + Math.random() * cHeight / 2;
     const restDistanceX = cWidth / Nx;
     const restDistanceY = cHeight / Ny;
     clothParticles = [];
     const mass = (p.clothMass / Nx) * Ny;
     const particleRadius = restDistanceX * 0.5; // Radius for collision spheres
+
+
+    // XXXX
 
     const connectParticles = (particles, x1, y1, x2, y2) => {
         const particleA = particles[x1][y1];
@@ -154,15 +158,23 @@ export function sketch() {
                 (y - Ny * 0.5) * restDistanceY
             );
 
+            let particleShape;
+            if (x % contactResolution === 0 && y % contactResolution === 0) {
+                particleShape = new CANNON.Sphere(particleRadius);
+            } else {
+                particleShape = new CANNON.Particle();
+            }
             const particle = new CANNON.Body({
                 mass: mass,
                 position: hangingPosition,
-                shape: new CANNON.Sphere(particleRadius),
+                shape: particleShape,
                 velocity: new CANNON.Vec3(0, 0, 0),
                 linearDamping: 0.5,
-                collisionFilterGroup: 1,
-                collisionFilterMask: 1
+                material: clothMaterial
             });
+
+            particle.collisionFilterGroup = 1 | 2;
+            particle.collisionFilterMask = 1 | 2;
 
             clothParticles[x].push(particle);
             world.addBody(particle);
@@ -212,15 +224,22 @@ export function sketch() {
                 (y - Ny * 0.5) * restDistanceY
             );
 
+            let particleShape;
+            if (x % contactResolution === 0 && y % contactResolution === 0) {
+                particleShape = new CANNON.Sphere(particleRadius);
+            } else {
+                particleShape = new CANNON.Particle();
+            }
             const particle = new CANNON.Body({
                 mass: mass,
                 position: hangingPosition,
-                shape: new CANNON.Sphere(particleRadius),
+                shape: particleShape,
                 velocity: new CANNON.Vec3(0, 0, 0),
                 linearDamping: 0.5,
-                collisionFilterGroup: 1,
-                collisionFilterMask: 1
+                material: clothMaterial
             });
+            particle.collisionFilterGroup = 1 | 2;
+            particle.collisionFilterMask = 1 | 2;
 
             clothParticles2[x].push(particle);
             world.addBody(particle);
@@ -277,8 +296,8 @@ export function sketch() {
 
     // FLOWFIELD 
     const flowFieldSize = 32;
-    flowField = createFlowField(flowFieldSize, 0, p.windStrength1);
-    flowField2 = createFlowField(flowFieldSize, 0, p.windStrength2);
+    flowField = createFlowField(flowFieldSize, 0, p.windStrength);
+    // flowField2 = createFlowField(flowFieldSize, 0, p.windStrength2);
 
     function createFlowField(size, offsetSpeed, windStrength) {
         const flowField = [];
@@ -321,16 +340,16 @@ export function sketch() {
 
                 let gridX = Math.floor((particle.position.x + cWidth / 2) / cWidth * flowFieldSize);
                 let gridY = Math.floor((particle.position.z + cHeight / 2) / cHeight * flowFieldSize);
-                let gridX2 = Math.floor((particle2.position.x + cWidth / 2) / cWidth * flowFieldSize);
-                let gridY2 = Math.floor((particle2.position.z + cHeight / 2) / cHeight * flowFieldSize);
+                // let gridX2 = Math.floor((particle2.position.x + cWidth / 2) / cWidth * flowFieldSize);
+                // let gridY2 = Math.floor((particle2.position.z + cHeight / 2) / cHeight * flowFieldSize);
 
                 gridX = Math.max(0, Math.min(flowFieldSize - 1, gridX));
                 gridY = Math.max(0, Math.min(flowFieldSize - 1, gridY));
-                gridX2 = Math.max(0, Math.min(flowFieldSize - 1, gridX2));
-                gridY2 = Math.max(0, Math.min(flowFieldSize - 1, gridY2));
+                // gridX2 = Math.max(0, Math.min(flowFieldSize - 1, gridX2));
+                // gridY2 = Math.max(0, Math.min(flowFieldSize - 1, gridY2));
 
                 const windForce = flowField[gridY][gridX].clone();
-                const windForce2 = flowField2[gridY2][gridX2].clone();
+                const windForce2 = flowField[gridX][gridY].clone();
 
                 particle.applyForce(windForce);
                 particle2.applyForce(windForce2);
@@ -341,7 +360,7 @@ export function sketch() {
 
     const animate = () => {
         if (showStats) stats.begin();
-        
+
         // ANIMATION
         if (!paused) {
             const t = performance.now() / 1000;
@@ -364,8 +383,8 @@ export function sketch() {
             if (p.wind) {
                 const t1 = t * 1.0; //speed
                 // Aggiorna il flowfield
-                flowField = createFlowField(flowFieldSize, t1 * 0.1, p.windStrength1);
-                flowField2 = createFlowField(flowFieldSize, t1 * 0.1, p.windStrength2);
+                flowField = createFlowField(flowFieldSize, t1 * 0.1, p.windStrength);
+                // flowField2 = createFlowField(flowFieldSize, t1 * 0.1, p.windStrength2);
 
                 for (let x = 0; x <= Nx; x++) {
                     for (let y = 0; y <= Ny; y++) {
@@ -375,16 +394,16 @@ export function sketch() {
                         // Ottieni il vettore del flusso dalla griglia del flowfield
                         let gridX = Math.floor((particle.position.x + cWidth / 2) / cWidth * flowFieldSize);
                         let gridY = Math.floor((particle.position.z + cHeight / 2) / cHeight * flowFieldSize);
-                        let gridX2 = Math.floor((particle2.position.x + cWidth / 2) / cWidth * flowFieldSize);
-                        let gridY2 = Math.floor((particle2.position.z + cHeight / 2) / cHeight * flowFieldSize);
+                        // let gridX2 = Math.floor((particle2.position.x + cWidth / 2) / cWidth * flowFieldSize);
+                        // let gridY2 = Math.floor((particle2.position.z + cHeight / 2) / cHeight * flowFieldSize);
 
                         // Confinare gridX e gridY nei limiti dell'array flowField
                         gridX = Math.max(0, Math.min(flowFieldSize - 1, gridX));
                         gridY = Math.max(0, Math.min(flowFieldSize - 1, gridY));
-                        gridX2 = Math.max(0, Math.min(flowFieldSize - 1, gridX2));
-                        gridY2 = Math.max(0, Math.min(flowFieldSize - 1, gridY2));
+                        // gridX2 = Math.max(0, Math.min(flowFieldSize - 1, gridX2));
+                        // gridY2 = Math.max(0, Math.min(flowFieldSize - 1, gridY2));
                         const windForce = flowField[gridY][gridX].clone();
-                        const windForce2 = flowField2[gridY2][gridX2].clone();
+                        const windForce2 = flowField[gridX][gridY].clone();
 
                         particle.applyForce(windForce);
                         particle2.applyForce(windForce2);
