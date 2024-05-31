@@ -1,5 +1,8 @@
 // TAROTS - ALL
 
+// Todo: 
+// - ligth angle for each position and easeout transition (like colors) 
+
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
@@ -244,7 +247,7 @@ export function sketch() {
     availableColors: [
       0x532B5F, // Violet
       0x9eddec, // Light blue
-      0xffffff, // White
+      0xaaaaaa, // White
       0x0140A6, // Blue
       0xFFC702, // Yellow
       0xFED374, // Light Yellow
@@ -326,15 +329,15 @@ export function sketch() {
   humanMate = new THREE.MeshStandardMaterial()
   humanMate.fog = true
   if (p.shadowMode) {
-    humanMate.color = p.background
-    humanMate.roughness = .5
-    humanMate.metalness = 0
-    humanMate.flatShading = true
+    humanMate.color = new THREE.Color(0xffffff)
+    humanMate.roughness = .2
+    humanMate.metalness = .9
+    humanMate.flatShading = false
   } else {
     humanMate.color = new THREE.Color(0xffffff)
     humanMate.envMap = cubeTextures[0].texture
     humanMate.roughness = .2
-    humanMate.metalness = 1
+    humanMate.metalness = .9
     humanMate.flatShading = false
   }
   groundMate = new THREE.MeshStandardMaterial({
@@ -380,7 +383,8 @@ export function sketch() {
       const size = box.getSize(new THREE.Vector3());
       human.traverse((node) => {
         if (node.isMesh) {
-          if (!p.shadowMode) node.material = humanMate
+          // if (!p.shadowMode) 
+            node.material = humanMate
           node.castShadow = true
           node.receiveShadow = true
         }
