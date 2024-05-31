@@ -9,15 +9,19 @@ import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 
 
-let scene
+let scene, camera
 let geometry, groundGeom, moonGeometry, reflectorBackGeom
 let material, material2, groundMate, mirrorMate
 let mirrorBack // reflector
+let moonGlassMaterial
+let moonGlassGeom
 let dispMap
 let animation
 let onWindowResize
 let noise3D
 let controls
+let starMaterial, starField
+let lightS, pointLight, pointLight2
 
 export function sketch() {
     // console.log("Sketch launched")
@@ -48,7 +52,7 @@ export function sketch() {
     let paused = false
 
     // CAMERA
-    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
     camera.position.copy(p.cameraPosition)
     camera.lookAt(p.lookAtCenter)
 
@@ -105,8 +109,8 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
 
-    let moonGlassGeom = new THREE.IcosahedronGeometry(.5, 0)
-    let moonGlassMaterial =  new THREE.MeshPhysicalMaterial({
+    moonGlassGeom = new THREE.IcosahedronGeometry(.5, 0)
+    moonGlassMaterial = new THREE.MeshPhysicalMaterial({
         // transmission: 1,
         // // opacity: .1,
         // // transparent: true,
@@ -128,7 +132,7 @@ export function sketch() {
         fog: true,
         side: THREE.DoubleSide
     })
-    let moonGlass= new THREE.Mesh(moonGlassGeom, moonGlassMaterial)
+    let moonGlass = new THREE.Mesh(moonGlassGeom, moonGlassMaterial)
     // moonGlass.scale.set(p.moonScale+1, p.moonScale+1, p.moonScale+1)
     moonGlass.position.z = -2
     moonGlass.position.x = 1
@@ -145,7 +149,6 @@ export function sketch() {
         //color: 0xFFFFFF, 
         color: 0xffffff,
         //opacity: 0.5 ,
-        transmoon: false,
         map: textures[3].texture,
         bumpMap: dispMap,
         bumpScale: 0.015,
@@ -180,12 +183,12 @@ export function sketch() {
         "position",
         new THREE.Float32BufferAttribute(stars, 3)
     );
-    const starMaterial = new THREE.PointsMaterial({
+    starMaterial = new THREE.PointsMaterial({
         size: 0.1,
         color: 0xffffff,
         fog: false,
     });
-    const starField = new THREE.Points(starGeometry, starMaterial);
+    starField = new THREE.Points(starGeometry, starMaterial);
     scene.add(starField);
 
     // REFLECTOR
@@ -231,7 +234,7 @@ export function sketch() {
     // scene.add(ambientLight)
 
     // LIGHTS
-    let lightS = new THREE.SpotLight(0x999999, 1, 0, Math.PI / 5, 0.5)
+    lightS = new THREE.SpotLight(0x999999, 1, 0, Math.PI / 5, 0.5)
     lightS.position.set(1, 50, 0)
     lightS.target.position.set(0, 0, 0)
     lightS.castShadow = true
@@ -252,10 +255,10 @@ export function sketch() {
     // light.target.position.set(-5, 0, 0)
     // light.castShadow = true
     // scene.add(light2)
-    const pointLight = new THREE.PointLight(0xffffff, 2)
+    pointLight = new THREE.PointLight(0xffffff, 2)
     pointLight.position.set(-70, 10, 20)
     scene.add(pointLight)
-    const pointLight2 = new THREE.PointLight(0xffffff, .1)
+    pointLight2 = new THREE.PointLight(0xffffff, .1)
     pointLight2.position.set(-30, 20, -20)
     scene.add(pointLight2)
     // const ambientLight = new THREE.AmbientLight(0xffffff)
@@ -339,11 +342,29 @@ export function dispose() {
     controls?.dispose()
     geometry?.dispose()
     moonGeometry?.dispose()
+    mirrorMate?.dispose()
+    reflectorBackGeom?.dispose();
+    moonGlassGeom?.dispose();
+    moonGlassMaterial?.dispose();
+    starMaterial?.dispose();
     groundGeom?.dispose()
     material?.dispose()
     material2?.dispose()
     groundMate?.dispose()
     dispMap?.dispose()
     noise3D = null
+    scene.traverse((child) => {
+        if (child.geometry) {
+            child.geometry.dispose();
+        }
+        if (child.material) {
+            child.material.dispose();
+        }
+    });
+    lightS?.dispose()
+    pointLight?.dispose()
+    pointLight2?.dispose()
+    camera = null;
+    mirrorBack = null;
     window.removeEventListener('resize', onWindowResize)
 }
