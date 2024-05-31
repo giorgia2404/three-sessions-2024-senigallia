@@ -1,9 +1,10 @@
+// TAROTS - SILVER SURFER
+
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
 import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
-import { cubeTexture } from 'three/examples/jsm/nodes/Nodes.js';
 
 
 let scene
@@ -11,11 +12,11 @@ let animation
 let onWindowResize
 let controls
 let loaderGLTF
-let mixer
+let mixer, action, actions, activeAction, previousAction
 let groundGeom
-let model, humanMate, groundMate
+let human, humanMate, groundMate
 let noise3D
-let clock, actions, activeAction, previousAction;
+let rectLight, light, rectLightHelper
 
 const api = { state: 'Walk' };
 
@@ -36,7 +37,7 @@ export function sketch() {
       0xFF0000, // Red
       0x93FF22, // Light green
       0x00CF00, // Dark green
-      0x000000  // Black
+      // 0x000000  // Black
     ],
     availableColors: [
       0x532B5F, // Violet
@@ -49,7 +50,7 @@ export function sketch() {
       0xE33117, // Red
       0x92BE23, // Light green
       0x1E841E, // Dark green
-      0x232323  // Black
+      // 0x232323  // Black
     ],
     // objects
     lightSpeed: 1,
@@ -138,7 +139,6 @@ export function sketch() {
   // Let's load our low poly human
   //GLTFLoader
   let gltfLoaded = false
-  let human
   loaderGLTF = new GLTFLoader()
   loaderGLTF.load(
     // resource URL
@@ -189,7 +189,35 @@ export function sketch() {
 
   /*
   function createGUI(model, animations) {
-    const states = ['appeso', 'arrampica', 'caduta', 'disteso', 'eremita', 'forza', 'fuga', 'giustizia', 'guardingo', 'idle', 'imperatore', 'imperatrice', 'innamorati', 'luna', 'mago', 'matto', 'morte', 'noia', 'porta', 'run', 'ruota', 'salsa', 'saluto', 'sole', 'solleva', 'tiene', 'Walk'];
+    const states = [
+      'appeso', 
+      'arrampica', 
+      'caduta', 
+      'disteso', 
+      'eremita', 
+      'forza', 
+      'fuga', 
+      'giustizia', 
+      'guardingo', 
+      'idle', 
+      'imperatore', 
+      'imperatrice', 
+      'innamorati', 
+      'luna', 
+      'mago', 
+      'matto', 
+      'morte', 
+      'noia', 
+      'porta', 
+      'run', 
+      'ruota', 
+      'salsa', 
+      'saluto', 
+      'sole', 
+      'solleva', 
+      'tiene', 
+      'Walk'
+    ];
     gui = new GUI();
     mixer = new THREE.AnimationMixer(model);
     actions = {};
@@ -231,21 +259,18 @@ export function sketch() {
   }
 
   // LIGHTS
-
-  // big rect
   RectAreaLightUniformsLib.init();
   let rectLightWidth = 4
   let rectLightHeight = 5.5
   let rectLightIntensity = 5
-  const rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], rectLightIntensity, rectLightWidth, rectLightHeight)
+  rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], rectLightIntensity, rectLightWidth, rectLightHeight)
   rectLight.position.set(0, p.floor + rectLightHeight / 2, 10)
   scene.add(rectLight)
-  const rectLightHelper = new RectAreaLightHelper(rectLight)
+  rectLightHelper = new RectAreaLightHelper(rectLight)
   rectLight.add(rectLightHelper)
 
-  const light = new THREE.DirectionalLight(0xffffff, .4)
+  light = new THREE.DirectionalLight(0xffffff, .4)
   light.position.set(0, 2, 10)
-  // light.target = cube
   light.castShadow = true
   light.shadow.radius = 8
   light.shadow.camera.near = 2
@@ -254,14 +279,6 @@ export function sketch() {
   light.shadow.mapSize.width = shadowMapWidth
   light.shadow.mapSize.height = shadowMapHeight
   scene.add(light)
-
-  // const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 3);
-  // hemiLight.position.set(0, 20, 0);
-  // scene.add(hemiLight);
-
-  // const dirLight = new THREE.DirectionalLight(0xffffff, 3);
-  // dirLight.position.set(0, 20, 10);
-  // scene.add(dirLight);
 
   // NOISE
   noise3D = NOISE.createNoise3D()
@@ -290,14 +307,6 @@ export function sketch() {
   }
   animate()
 
-  // function animate() {
-  //   const dt = clock.getDelta();
-  //   if (mixer) mixer.update(dt);
-  //   requestAnimationFrame(animate);
-  //   renderer.render(scene, camera);
-  //   stats.update();
-  // }
-
 }
 
 export function dispose() {
@@ -307,7 +316,37 @@ export function dispose() {
   groundMate?.dispose()
   humanMate?.dispose()
   noise3D = null
-  // gui?.destroy()
-  // ...
-  window.removeEventListener('resize', onWindowResize)
+  if (human) {
+    scene.remove(human);
+  }
+  if (mixer) {
+    mixer.stopAllAction();
+    mixer.uncacheRoot(mixer.getRoot());
+    mixer = null;
+  }
+  scene.traverse((child) => {
+    if (child.geometry) {
+      child.geometry.dispose();
+    }
+    if (child.material) {
+      child.material.dispose();
+    }
+  });
+  if (actions) {
+    for (const key in actions) {
+      if (actions.hasOwnProperty(key)) {
+        const action = actions[key];
+        action.stop();
+      }
+    }
+    actions = null;
+  }
+  if (action) {
+    action.stop();
+    action = null;
+  }
+  rectLight.dispose();
+  rectLightHelper.dispose();
+  light.dispose();
+  scene = null;
 }

@@ -1,9 +1,9 @@
-//TEST CLOTH + 3D MODEL
+// CLOTH
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 let scene, animation, onWindowResize, controls, onMouseMove
-let groundGeom, clothGeometry
+let groundGeom
 let groundMate, clothMaterial, mirrorMate
 let world, groundBody
 let noise3D
@@ -112,7 +112,7 @@ export function sketch() {
     const cHeight = p.clothHeight
     const Nx = p.clothResolution
     const Ny = p.clothResolution
-    clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny)
+    const clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny)
     mirrorMate = new THREE.MeshPhongMaterial({
         color: 0x444444,
         envMap: cubeTextures[0].texture,
@@ -154,8 +154,9 @@ export function sketch() {
             )
 
             const particle = new CANNON.Body({
+                mass: mass,
                 // mass: y === Ny ? 0 : mass, // line
-                mass: y >= Ny - 2 && x >= Nx - 2 || y >= Ny - 2 && x <= 2 ? 0 : mass, // arms
+                // mass: y >= Ny - 2 && x >= Nx - 2 || y >= Ny - 2 && x <= 2 ? 0 : mass, // arms
                 // mass: y >= Ny - 2 && x >= Nx - 1 || y >= Ny - 2 && x <= 1 || y <= 2 && x <= 1 || y <= 2 && x >= Nx - 1 ? 0 : mass, // 4 arms
                 position: hangingPosition,
                 shape: new CANNON.Particle(),
@@ -177,10 +178,44 @@ export function sketch() {
             } else if (x === Nx && y < Ny) {
                 connectParticles(x, y, x, y + 1);
             } else if (x < Nx && y === Ny) {
-                connectParticles(x, y, x +1, y);
+                connectParticles(x, y, x + 1, y);
             }
         }
     }
+
+    // Aggiungi le corde elastiche
+    const anchorDistance = 2;
+    const anchorPoints = [
+        // new CANNON.Vec3(-cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
+        // new CANNON.Vec3(cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
+        new CANNON.Vec3(cWidth / 2 + .2, p.floor + cHeight + 6 + anchorDistance, cHeight / 2),
+        new CANNON.Vec3(-cWidth / 2 - .2, p.floor + cHeight + 6 + anchorDistance, cHeight / 2),
+    ];
+
+    const anchorBodies = [];
+    anchorPoints.forEach((point) => {
+        const anchorBody = new CANNON.Body({
+            mass: 0,
+            position: point,
+            shape: new CANNON.Particle(),
+        });
+        anchorBodies.push(anchorBody);
+        world.addBody(anchorBody);
+    });
+
+    const cornerParticles = [
+        // clothParticles[0][0],
+        // clothParticles[Nx][0],
+        clothParticles[Nx][Ny],
+        clothParticles[0][Ny],
+    ];
+
+    cornerParticles.forEach((particle, index) => {
+        const anchorBody = anchorBodies[index];
+        const constraint = new CANNON.DistanceConstraint(particle, anchorBody, anchorDistance);
+        world.addConstraint(constraint);
+        constraints.push(constraint);
+    });
 
     // Initialize the vertices of the cloth
     const vertices = [];
@@ -318,17 +353,23 @@ export function sketch() {
 
 export function dispose() {
     cancelAnimationFrame(animation)
+    scene.remove(cloth);
+    clothParticles.forEach((row) => {
+        row.forEach((particle) => {
+            world.removeBody(particle);
+        });
+    });
+    constraints.forEach((constraint) => {
+        world.removeConstraint(constraint);
+    });
+    world.removeBody(groundBody);
+    // constraints = null;
+    clothParticles = null;
     controls?.dispose()
     clothMaterial?.dispose()
     mirrorMate?.dispose()
     groundGeom?.dispose()
     groundMate?.dispose()
-
-    cloth.geometry.dispose()
-    clothGeometry.dispose()
-    constraints.forEach(constraint => world.removeConstraint(constraint))
-    clothParticles.forEach(row => row.forEach(particle => world.removeBody(particle)))
-
     world = null
     noise3D = null
     flowField = null

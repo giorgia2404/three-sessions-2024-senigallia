@@ -1,4 +1,4 @@
-//TEST CLOTH + 3D MODEL
+// CLOTH FALLING
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 

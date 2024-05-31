@@ -1,3 +1,5 @@
+// CAUSTIC + GRIFFIN
+
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
 
@@ -36,7 +38,7 @@ export function sketch() {
         // fireflies
         fireFlySpeed: .1,
         // world
-        background: new THREE.Color(0x110000),//new THREE.Color(0x0000ff),
+        background: new THREE.Color(0x0000ff),
         floor: 0,
         // ...
     }
@@ -95,7 +97,7 @@ export function sketch() {
         fog: true
     })
     groundMate = new THREE.MeshStandardMaterial({
-        color: 0x000000, //0x330000,
+        color: 0x330000,
         roughness: 1,
         metalness: 0,
         fog: true,
