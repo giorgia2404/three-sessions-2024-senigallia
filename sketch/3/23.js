@@ -47,7 +47,7 @@ export function sketch() {
     controls = new OrbitControls(camera, renderer.domElement)
     controls.enablePan = false
     controls.enableDamping = true
-    controls.dampingFactor = 0.05
+    controls.dampingFactor = 0.005
     controls.maxPolarAngle = Math.PI / 2 + 0.2
     controls.minPolarAngle = Math.PI / 2 - 0.4
     controls.autoRotate = p.autoRotate
@@ -61,7 +61,7 @@ export function sketch() {
     scene.fog = new THREE.Fog(scene.background, 100, 1000)
 
     // LIGHT
-    const light = new THREE.PointLight(0xffffff, 1000)
+    const light = new THREE.PointLight(0xffffff, 5)
     light.position.set(-10, 10, 10)
     light.castShadow = true
     light.shadow.mapSize.width = 1024
@@ -70,13 +70,13 @@ export function sketch() {
     light.shadow.camera.far = 20
     scene.add(light)
 
-    light1 = new THREE.SpotLight(0xE33117, 500)
+    light1 = new THREE.SpotLight(0xE33117, 5)
     light1.position.set(10, 5, 5)
     // light1.angle = Math.PI / 4
     // light1.penumbra = 0.5
     scene.add(light1)
 
-    light2 = new THREE.SpotLight(0xE33117, 299)
+    light2 = new THREE.SpotLight(0xE33117, 3)
     light2.position.set(-5, 5, 5)
     // light2.angle = Math.PI / 4
     // light2.penumbra = 0.5

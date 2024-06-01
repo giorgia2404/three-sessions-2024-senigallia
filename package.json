@@ -4,7 +4,7 @@
     "dat.gui": "^0.7.9",
     "simplex-noise": "^4.0.1",
     "stats.js": "^0.17.0",
-    "three": "^0.165.0",
+    "three": "^0.152.2", 
     "three-subdivide": "^1.1.2"
   },
   "devDependencies": {
