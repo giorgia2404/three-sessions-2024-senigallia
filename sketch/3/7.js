@@ -61,22 +61,24 @@ export function sketch() {
     scene.fog = new THREE.Fog(scene.background, 100, 1000)
 
     // LIGHT
-    const light = new THREE.PointLight(0xffffff, 5)
+    const light = new THREE.PointLight(0xffffff, 5 * PI)
     light.position.set(-10, 10, 10)
     light.castShadow = true
     light.shadow.mapSize.width = 1024
     light.shadow.mapSize.height = 1024
     light.shadow.camera.near = 0.5
     light.shadow.camera.far = 20
+    light.decay = 0
     scene.add(light)
 
-    light1 = new THREE.SpotLight(0xE33117, 5)
+    light1 = new THREE.SpotLight(0xE33117, 5 * PI)
     light1.position.set(10, 5, 5)
     // light1.angle = Math.PI / 4
     // light1.penumbra = 0.5
+    light1.decay = 0
     scene.add(light1)
 
-    light2 = new THREE.SpotLight(0xE33117, 3)
+    light2 = new THREE.SpotLight(0xE33117, 3 * PI)
     light2.position.set(-5, 5, 5)
     // light2.angle = Math.PI / 4
     // light2.penumbra = 0.5
@@ -85,6 +87,7 @@ export function sketch() {
     light2.shadow.mapSize.height = 1024
     light2.shadow.camera.near = 0.5
     light2.shadow.camera.far = 20
+    light2.decay = 0
     scene.add(light2)
 
     //CANNON WORD
