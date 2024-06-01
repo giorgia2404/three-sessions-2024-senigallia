@@ -202,7 +202,7 @@ export function sketch() {
     }
     clothGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices.length * 3), 3));
 
-     light = new THREE.DirectionalLight(0xffffff, 2)
+    light = new THREE.DirectionalLight(0xffffff, 2 * PI)
     light.position.set(0, 15, 0)
     light.target.position.set(0, 2, 0)
     light.castShadow = true
@@ -212,13 +212,15 @@ export function sketch() {
     light.shadow.bias = 0.0001
     light.shadow.mapSize.width = shadowMapWidth
     light.shadow.mapSize.height = shadowMapHeight
+    light.decay = 0
     scene.add(light)
     // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
-     lightD = new THREE.DirectionalLight(0xffffff, 3)
+    lightD = new THREE.DirectionalLight(0xffffff, 3 * PI)
     lightD.position.set(0, 2, 0)
     lightD.target.position.set(0, 8, 0)
+    lightD.decay = 0
     scene.add(lightD)
     const lightHelperD = new THREE.DirectionalLightHelper(lightD, 5);
     // scene.add(lightHelperD);

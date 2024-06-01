@@ -561,14 +561,14 @@ export function sketch() {
   RectAreaLightUniformsLib.init();
   let rectLightWidth = 4
   let rectLightHeight = 5.5
-  let rectLightIntensity = 5
+  let rectLightIntensity = 5 * PI
   rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], rectLightIntensity, rectLightWidth, rectLightHeight)
   rectLight.position.set(0, p.floor + rectLightHeight / 2, 10)
   scene.add(rectLight)
   rectLightHelper = new RectAreaLightHelper(rectLight)
   rectLight.add(rectLightHelper)
 
-  light = new THREE.DirectionalLight(0xffffff, .4)
+  light = new THREE.DirectionalLight(0xffffff, .4 * PI)
   light.position.set(0, 2, 10)
   light.castShadow = true
   light.shadow.radius = 8
@@ -577,6 +577,7 @@ export function sketch() {
   light.shadow.bias = 0.0001
   light.shadow.mapSize.width = shadowMapWidth
   light.shadow.mapSize.height = shadowMapHeight
+  light.decay = 0
   scene.add(light)
 
   // NOISE

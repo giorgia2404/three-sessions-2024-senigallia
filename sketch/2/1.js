@@ -164,7 +164,7 @@ export function sketch() {
     )
 
     // LIGHTS
-    lightS = new THREE.SpotLight(0x999999, 1, 0, Math.PI / 5, 0.5)
+    lightS = new THREE.SpotLight(0x999999, 1 * PI, 0, Math.PI / 5, 0.5)
     lightS.position.set(1, 2, 10)
     lightS.target.position.set(0, 0, 0)
     lightS.castShadow = true
@@ -173,11 +173,13 @@ export function sketch() {
     lightS.shadow.bias = 0.0001
     lightS.shadow.mapSize.width = shadowMapWidth
     lightS.shadow.mapSize.height = shadowMapHeight
+    lightS.decay = 0
     scene.add(lightS)
 
-    light = new THREE.DirectionalLight(0xffffff, .5)
+    light = new THREE.DirectionalLight(0xffffff, .5 * PI)
     light.position.set(0, 2, 10)
     light.target.position.clone(eye)
+    light.decay = 0
     // light.castShadow = true
     scene.add(light)
     // const light2 = new THREE.DirectionalLight(0xffffff, .4)
@@ -185,9 +187,10 @@ export function sketch() {
     // light.target.position.set(-5, 0, 0)
     // light.castShadow = true
     // scene.add(light2)
-    pointLight = new THREE.PointLight(0xffffff, 1)
+    pointLight = new THREE.PointLight(0xffffff, 1 * PI)
     pointLight.position.set(0, 1, 2)
     scene.add(pointLight)
+    pointLight.decay = 0
     // const pointLight = new THREE.PointLight(0xffffff, .5)
     // pointLight.position.set(20, 20, 20)
     // scene.add(pointLight)

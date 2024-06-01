@@ -223,11 +223,12 @@ export function sketch() {
     const texture = new THREE.VideoTexture(video);
     // texture.colorSpace = THREE.SRGBColorSpace;
     // texture.needsUpdate = true;
-    spotLight = new THREE.SpotLight(0xbbbbff, 20);
+    spotLight = new THREE.SpotLight(0xbbbbff, 20 * PI);
     // spotLight.distance = 50;
     // spotLight.intensity = 1;
     // spotLight.decay = 0;
     // spotLight.angle = 1
+    spotLight.decay = 0
     spotLight.penumbra = .5
     spotLight.position.set(0, 10, 0);
     spotLight.map = texture
@@ -244,8 +245,9 @@ export function sketch() {
     // FIREFLIES
     fireFlyGeom = new THREE.SphereGeometry(.005, 4, 4)
     const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate)
-    fireFlyLight = new THREE.PointLight(0xff0000, 40, 5);
+    fireFlyLight = new THREE.PointLight(0xff0000, 40 * PI, 5);
     fireFlyLight.castShadow = true;
+    // fireFlyLight.decay = 0
     scene.add(fireFlyLight);
     scene.add(fireFly)
 

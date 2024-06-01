@@ -220,8 +220,8 @@ export function sketch() {
 
     // LIGHTS
     let lightIntensity
-    if (p.night) lightIntensity = .5
-    else lightIntensity = 4
+    if (p.night) lightIntensity = .5 * PI
+    else lightIntensity = 4 * PI
     light = new THREE.DirectionalLight(0xffffff, lightIntensity)
     light.position.set(10, 20, -20)
     light.target.position.set(0, 0, 0)
@@ -232,13 +232,15 @@ export function sketch() {
     light.shadow.bias = 0.0001
     light.shadow.mapSize.width = shadowMapWidth
     light.shadow.mapSize.height = shadowMapHeight
+    light.decay = 0
     scene.add(light)
     const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
-    lightD = new THREE.DirectionalLight(0xffffff, 10)
+    lightD = new THREE.DirectionalLight(0xffffff, 10 * PI)
     lightD.position.set(-4, 0, -5)
     lightD.target.position.set(0, 4, 0)
+    lightD.decay = 0
     // scene.add(lightD)
 
     // ambientLight = new THREE.AmbientLight(0xffffff)

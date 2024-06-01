@@ -35,6 +35,7 @@ global.THREE = THREE
 global.GUI = GUI
 global.CANNON = CANNON
 global.NOISE = NOISE
+global.PI = Math.PI
 
 global.showStats = true // xxx
 
@@ -325,6 +326,7 @@ const loadCubeTexture = (name, path, format) => {
 	global.cubeTextures.push({
 		name: name,
 		texture: cubeTextureLoader.load(urls, (cube) => {
+			cube.colorSpace = THREE.SRGBColorSpace
 			// console.log('loadedCubeTexture: ' + cube)
 		})
 	})
@@ -336,6 +338,7 @@ const loadTexture = (name, path, format) => {
 	global.textures.push({
 		name: name,
 		texture: textureLoader.load(url, (texture) => {
+			texture.colorSpace = THREE.SRGBColorSpace
 			// console.log('loadedTexture: ' + texture)
 		})
 	})

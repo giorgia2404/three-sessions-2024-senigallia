@@ -170,7 +170,7 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
 
-    light = new THREE.DirectionalLight(0xffffff, 10)
+    light = new THREE.DirectionalLight(0xffffff, 10 * PI)
     light.position.set(0, 2, -5)
     // light.target = cube
     light.castShadow = true
@@ -180,13 +180,15 @@ export function sketch() {
     light.shadow.bias = 0.0001
     light.shadow.mapSize.width = shadowMapWidth
     light.shadow.mapSize.height = shadowMapHeight
+    light.decay = 0
     scene.add(light)
     // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
-    lightD = new THREE.DirectionalLight(0xffffff, 1)
+    lightD = new THREE.DirectionalLight(0xffffff, 1 * PI)
     light.position.set(0, 3, -3)
     light.target.position.set(0, 0, 0)
+    light.decay = 0
     scene.add(lightD)
     // const pointLight = new THREE.PointLight(0xffffff, 2)
     // pointLight.position.set(20, 20, 20)
