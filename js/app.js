@@ -346,11 +346,7 @@ const loadTexture = (name, path, format) => {
 // Let's preload our textures
 // global.cubeTextures[n]
 loadCubeTexture('PureSky', './assets/textures/cube/PureSky-256/', '.png') // 0
-loadCubeTexture('AbandonedParking', './assets/textures/cube/AbandonedParking-1024/', '.png') // 1
-loadCubeTexture('cloud', './assets/textures/cube/cloud/', '.png') // 2
-loadCubeTexture('TropicalSunnyDay', './assets/textures/cube/TropicalSunnyDay/', '.jpg') // 3
-loadCubeTexture('cielo-scale', './assets/textures/cube/cielo-scale/', '.jpg') // 4
-loadCubeTexture('nuvole-cielo', './assets/textures/cube/Standard-Cube-Map-5/', '.jpg') // 5
+loadCubeTexture('PureSky', './assets/textures/cube/PureSky-2048/', '.png') // 1
 // ...
 // global.textures[n]
 loadTexture('luna_1k_diff', './assets/textures/luna_1k_diff', '.png') // 0

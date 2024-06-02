@@ -25,10 +25,12 @@ export function sketch() {
         // objects
         lightSpeed: .2,
         animate: false,
+        // mirror
+        mirrorInclination: .05,
         // ...
         // view
-        lookAtCenter: new THREE.Vector3(0, 1, 0),
-        cameraPosition: new THREE.Vector3(- 3 + Math.random() * 6, -0.5, -5),
+        lookAtCenter: new THREE.Vector3(0, 2, 0),
+        cameraPosition: new THREE.Vector3(- 5 + Math.random() * 10, -0.4, -8),
         autoRotate: false,
         autoRotateSpeed: -1,
         camera: 35,
@@ -65,8 +67,8 @@ export function sketch() {
     controls.maxDistance = 15
     controls.maxPolarAngle = Math.PI / 2
     controls.minPolarAngle = Math.PI / 2 - 0.8
-    controls.maxAzimuthAngle = - Math.PI / 2
-    controls.minAzimuthAngle = Math.PI / 2
+    // controls.maxAzimuthAngle = - Math.PI / 2
+    // controls.minAzimuthAngle = Math.PI / 2
     controls.autoRotate = p.autoRotate
     controls.autoRotateSpeed = p.autoRotateSpeed
     controls.target = p.lookAtCenter
@@ -76,14 +78,17 @@ export function sketch() {
     scene.background = p.background
     scene.fog = new THREE.Fog(scene.background, 3, 30)
     // materials
+    // sky.mapping = THREE.CubeRefractionMapping
     mirrorMate = new THREE.MeshPhongMaterial({
-        color: 0x444444,
-        envMap: cubeTextures[0].texture,
+        color: 0xffffff,
+        envMap: cubeTextures[1].texture,
         side: THREE.DoubleSide,
         // combine: THREE.addOperation,
-        reflectivity: 1,
+        // reflectivity: 1,
+        // flatShading: true,
+        // shininess: 100,
         // specular: 0x999999,
-        fog: true
+        fog: false
     })
     groundMate = new THREE.MeshStandardMaterial({
         color: 0x000000,
@@ -103,6 +108,7 @@ export function sketch() {
             textureWidth: window.innerWidth * window.devicePixelRatio,
             textureHeight: window.innerHeight * window.devicePixelRatio,
         })
+    mirrorBack.rotation.x = p.mirrorInclination
     mirrorBack.position.y = p.floor + mirrorH / 2
     mirrorBack.position.z = 3
     mirrorBack.rotation.y = Math.PI
@@ -110,7 +116,8 @@ export function sketch() {
     // let's make the mirror backside to do a shadow
     reflectorBackGeom = new THREE.PlaneGeometry(mirrorW, mirrorH)
     let reflectorBack = new THREE.Mesh(reflectorBackGeom, mirrorMate)
-    reflectorBack.position.y = p.floor + mirrorW / 2
+    reflectorBack.rotation.x = p.mirrorInclination
+    reflectorBack.position.y = p.floor + mirrorH / 2
     reflectorBack.position.z = 3.05
     reflectorBack.rotation.y = Math.PI
     reflectorBack.castShadow = true
@@ -118,7 +125,8 @@ export function sketch() {
     // let's make some light below the mirror...
     RectAreaLightUniformsLib.init();
     let rectLightIntensity = 100
-    const rectLight = new THREE.RectAreaLight(0xffffff, rectLightIntensity, mirrorW, mirrorH)
+    const rectLight = new THREE.RectAreaLight(0xffffff, rectLightIntensity, mirrorW + .025, mirrorH + .025)
+    rectLight.rotation.x = p.mirrorInclination
     rectLight.position.set(0, p.floor + mirrorH / 2, 3.025)
     scene.add(rectLight)
     const rectLightHelper = new RectAreaLightHelper(rectLight)
@@ -170,9 +178,9 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
 
-    light = new THREE.DirectionalLight(0xffffff, 10 * PI)
-    light.position.set(0, 2, -5)
-    // light.target = cube
+    light = new THREE.DirectionalLight(0xffffff, 3)//* PI)
+    light.position.set(-3, 0, -7)
+    light.target.position.set(0, 0, 0)
     light.castShadow = true
     light.shadow.radius = 8
     light.shadow.camera.near = 2
@@ -180,24 +188,29 @@ export function sketch() {
     light.shadow.bias = 0.0001
     light.shadow.mapSize.width = shadowMapWidth
     light.shadow.mapSize.height = shadowMapHeight
-    light.decay = 0
+    // light.decay = 0
     scene.add(light)
     // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
-    lightD = new THREE.DirectionalLight(0xffffff, 1 * PI)
-    light.position.set(0, 3, -3)
-    light.target.position.set(0, 0, 0)
-    light.decay = 0
+    lightD = new THREE.DirectionalLight(0xffffff, 1) //* PI)
+    lightD.position.set(-3, 3, 0)
+    lightD.target.position.set(0, 0, 0)
+    lightD.decay = 0
     scene.add(lightD)
-    // const pointLight = new THREE.PointLight(0xffffff, 2)
-    // pointLight.position.set(20, 20, 20)
-    // scene.add(pointLight)
+
+    const pointLight2 = new THREE.PointLight(0xffffff, 10 * PI)
+    pointLight2.position.set(-6, 2, +.5)
+    scene.add(pointLight2)
+
+    const pointLight = new THREE.PointLight(0xffffff, 10 * PI)
+    pointLight.position.set(6, 2, -.5)
+    scene.add(pointLight)
     // const pointLight2 = new THREE.PointLight(0xffffff, .1)
     // pointLight2.position.set(-30, 20, -20)
     // scene.add(pointLight2)
-    // const ambientLight = new THREE.AmbientLight(0xffffff)
-    // scene.add(ambientLight)
+    const ambientLight = new THREE.AmbientLight(0x555555)
+    scene.add(ambientLight)
 
     // GUI
     // gui = new GUI.GUI()

@@ -55,7 +55,7 @@ export function sketch() {
     // p.background = new THREE.Color(p.availableColors[whichColor])
 
     // other parameters
-    let near = 0.2, far = 100
+    let near = 1, far = 50
     let shadowMapWidth = 2048, shadowMapHeight = 2048
 
     // CAMERA
@@ -76,10 +76,10 @@ export function sketch() {
     controls.enablePan = false
     controls.enableDamping = true
     controls.dampingFactor = 0.05
-    controls.minDistance = 10
-    controls.maxDistance = 25
-    controls.maxPolarAngle = Math.PI / 2 + 0.2
-    controls.minPolarAngle = Math.PI / 2 - 0.4
+    controls.minDistance = 7
+    controls.maxDistance = 17
+    controls.maxPolarAngle = Math.PI / 2 + .2
+    controls.minPolarAngle = 0
     controls.autoRotate = p.autoRotate
     controls.autoRotateSpeed = p.autoRotateSpeed
     controls.target = p.lookAtCenter
@@ -93,8 +93,8 @@ export function sketch() {
     mirrorMate = new THREE.MeshPhongMaterial({
         color: 0xffffff,
         map: textures[1].texture,
-        envMap: cubeTextures[0].texture,
-        // side: THREE.DoubleSide,
+        envMap: cubeTextures[1].texture,
+        side: THREE.DoubleSide,
         // combine: THREE.addOperation,
         reflectivity: 1,
         // flatShading: true,
