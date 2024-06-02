@@ -26,7 +26,7 @@ export function sketch() {
         // cloth
         clothWidth: 10,
         clothHeight: 10,
-        clothResolution: 22,
+        clothResolution: 25,
         // viewgf
         lookAtCenter: new THREE.Vector3(0, 5, 3),
         cameraPosition: new THREE.Vector3(0, 1, - 7 - Math.random() * 25),

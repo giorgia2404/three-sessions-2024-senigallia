@@ -116,7 +116,7 @@ export function sketch() {
     const clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny);
     mirrorMate = new THREE.MeshPhongMaterial({
         color: 0x444444,
-        envMap: cubeTextures[0].texture,
+        envMap: cubeTextures[1].texture,
         side: THREE.DoubleSide,
         flatShading: true,
         reflectivity: 1,
