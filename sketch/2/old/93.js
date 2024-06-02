@@ -1,4 +1,4 @@
-//TEST CLOTH + ROTATION 2 VERTICES (M)
+//TEST CLOTH + ROTATION 4 VERTICES (N)
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -21,7 +21,7 @@ export function sketch() {
 
     const p = {
         // cloth
-        clothWidth: 20,
+        clothWidth: 10,
         clothHeight: 10,
         clothResolution: 22,
         // view
@@ -33,8 +33,8 @@ export function sketch() {
         // world
         background: new THREE.Color(0x000000),
         clothMass: 1,
-        gravity: -9,
-        wind: false,
+        gravity: -18,
+        wind: true,
         windStrength: 2 + Math.random() * 8,
         floor: -2,
     };
@@ -64,7 +64,7 @@ export function sketch() {
     world = new CANNON.World({
         gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
-    world.solver.iterations = 20
+    world.solver.iterations = 10
 
     // MATERIALS
     groundMate = new THREE.MeshStandardMaterial({
@@ -102,7 +102,7 @@ export function sketch() {
     controls.minDistance = 5;
     controls.maxDistance = 40;
     controls.maxPolarAngle = Math.PI / 2 + 0.2;
-    controls.minPolarAngle = - Math.PI
+    controls.minPolarAngle = Math.PI / 2 - 0.4;
     controls.autoRotate = p.autoRotate;
     controls.autoRotateSpeed = p.autoRotateSpeed;
     controls.target = p.lookAtCenter;
@@ -186,10 +186,12 @@ export function sketch() {
     // Aggiungi le corde elastiche
     const anchorDistance = 2;
     const anchorPoints = [
-        // new CANNON.Vec3(-cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
-        // new CANNON.Vec3(cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
+        // Angoli superiori
         new CANNON.Vec3(cWidth / 2 + .2, p.floor + cHeight + 6 + anchorDistance, cHeight / 2),
         new CANNON.Vec3(-cWidth / 2 - .2, p.floor + cHeight + 6 + anchorDistance, cHeight / 2),
+        // Angoli inferiori
+        new CANNON.Vec3(cWidth / 2 + .2, p.floor + 4, cHeight / 2),
+        new CANNON.Vec3(-cWidth / 2 - .2, p.floor + 4, cHeight / 2)
     ];
 
     const anchorBodies = [];
@@ -204,10 +206,12 @@ export function sketch() {
     });
 
     const cornerParticles = [
-        // clothParticles[0][0],
-        // clothParticles[Nx][0],
+        // Angoli superiori
         clothParticles[Nx][Ny],
         clothParticles[0][Ny],
+        // Angoli inferiori
+        clothParticles[Nx][0],
+        clothParticles[0][0]
     ];
 
     cornerParticles.forEach((particle, index) => {
@@ -217,11 +221,16 @@ export function sketch() {
         constraints.push(constraint);
     });
 
-    // Calcola il punto mediano tra i due anchorPoints originali
-    const midpoint = new CANNON.Vec3(
+    // Calcola il punto mediano tra i due anchorPoints superiori e inferiori
+    const midpointTop = new CANNON.Vec3(
         (anchorPoints[0].x + anchorPoints[1].x) / 2,
         (anchorPoints[0].y + anchorPoints[1].y) / 2,
         (anchorPoints[0].z + anchorPoints[1].z) / 2
+    );
+    const midpointBottom = new CANNON.Vec3(
+        (anchorPoints[2].x + anchorPoints[3].x) / 2,
+        (anchorPoints[2].y + anchorPoints[3].y) / 2,
+        (anchorPoints[2].z + anchorPoints[3].z) / 2
     );
 
     // Initialize the vertices of the cloth
@@ -233,7 +242,7 @@ export function sketch() {
     }
     clothGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices.length * 3), 3));
 
-    const light = new THREE.DirectionalLight(0xffffff, 7 * PI)
+    const light = new THREE.DirectionalLight(0xffffff, 7)
     light.position.set(0, 10, -5)
     light.target.position.set(0, 2, 10)
     light.castShadow = true
@@ -243,15 +252,13 @@ export function sketch() {
     light.shadow.bias = 0.0001
     light.shadow.mapSize.width = shadowMapWidth
     light.shadow.mapSize.height = shadowMapHeight
-    light.decay = 0
     scene.add(light)
     const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
-    const lightD = new THREE.DirectionalLight(0xffffff, 3 * PI)
+    const lightD = new THREE.DirectionalLight(0xffffff, 3)
     lightD.position.set(2, 0, -5)
     lightD.target.position.set(0, 2, 10)
-    lightD.decay = 0
     scene.add(lightD)
 
     const ambientLight = new THREE.AmbientLight(0xffffff)
@@ -291,29 +298,6 @@ export function sketch() {
     const timeStep = 1 / 60
     const stepsPerFrame = 2
     let lastCallTime
-
-    let rotRadius = 4;
-    let targetRotRadius = rotRadius;
-    let targetRotAngle = 0;
-    let tRot = 0;
-    const noiseFreq = 0.5;
-    const minRotRadius = .5;
-    const maxRotRadius = 8;
-    const minRotSpeed = -.5;
-    const maxRotSpeed = .5;
-    const rotRadiusLerp = 0.01;
-    const rotAngleLerp = 0.01;
-    const accelerationThreshold = 0.95;
-    const accelerationMultiplier = 20;
-
-    function smoothedNoise(t, freq, min, max, threshold, multiplier) {
-        const noise = noise3D(t * freq, 0, 0);
-        const value = THREE.MathUtils.mapLinear(noise, -1, 1, min, max);
-        if (Math.random() < threshold) {
-            return value * multiplier;
-        }
-        return value;
-    }
 
     const animate = () => {
         if (showStats) stats.begin();
@@ -361,25 +345,32 @@ export function sketch() {
                 }
             }
 
-
-
-            targetRotRadius = smoothedNoise(t, noiseFreq, minRotRadius, maxRotRadius);
-            targetRotAngle += smoothedNoise(t, noiseFreq, minRotSpeed, maxRotSpeed, accelerationThreshold, accelerationMultiplier) * timeStep;
-
-            rotRadius += (targetRotRadius - rotRadius) * rotRadiusLerp;
-            tRot += (targetRotAngle - tRot) * rotAngleLerp;
-
+            // Calcola le nuove posizioni degli anchorBodies per il movimento circolare
+            const radius = 8; // Raggio del cerchio
+            const speed = 1.1; // Velocità di rotazione
 
             anchorBodies[0].position.set(
-                midpoint.x + rotRadius * Math.cos(tRot),
-                midpoint.y,
-                midpoint.z + rotRadius * Math.sin(tRot)
+                midpointTop.x + radius * Math.cos(speed * t),
+                midpointTop.y,
+                midpointTop.z + radius * Math.sin(speed * t)
             );
 
             anchorBodies[1].position.set(
-                midpoint.x + rotRadius * Math.cos(tRot + Math.PI),
-                midpoint.y,
-                midpoint.z + rotRadius * Math.sin(tRot + Math.PI)
+                midpointTop.x + radius * Math.cos(speed * t + Math.PI),
+                midpointTop.y,
+                midpointTop.z + radius * Math.sin(speed * t + Math.PI)
+            );
+
+            anchorBodies[2].position.set(
+                midpointBottom.x + radius * Math.cos(speed * t),
+                midpointBottom.y,
+                midpointBottom.z + radius * Math.sin(speed * t)
+            );
+
+            anchorBodies[3].position.set(
+                midpointBottom.x + radius * Math.cos(speed * t + Math.PI),
+                midpointBottom.y,
+                midpointBottom.z + radius * Math.sin(speed * t + Math.PI)
             );
 
             const positions = cloth.geometry.attributes.position.array;

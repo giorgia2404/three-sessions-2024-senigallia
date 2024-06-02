@@ -1,666 +1,263 @@
-// TAROTS - ALL
+// MIRROR/CASLTLE - PRIMER
 
-// Todo: 
-// - ligth angle for each position and easeout transition (like colors) 
-
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
 
 import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 
-let camera
-let scene
-let animation
+let scene, camera
+let groundMate, mirrorMate
+let groundGeom, stepSideGeom, reflectorBackGeom
+const ramps = []
+let mirrorBack // reflector
+let animation, light, lightD
 let onWindowResize
-let controls
-let loaderGLTF
-let mixer, actionsToPlay, action, actions, activeAction, previousAction
-let groundGeom, clock
-let human, humanMate, groundMate
 let noise3D
-let rectLight, light, rectLightHelper
-let directorTimeOut
+// let gui
+let controls
 
 export function sketch() {
-  // console.log("Sketch launched")
+    // console.log("Sketch launched")
 
-  actionsToPlay = [
-    // instructions:
-    // kind: 'idle' < actions for idle mode
-    // kind: 'special' < other actions to play randomly with parameters (repetitions, loopInOut, ...)
+    // PARAMETERS
+    const p = {
+        // objects
+        lightSpeed: .2,
+        animate: false,
+        // ...
+        // view
+        lookAtCenter: new THREE.Vector3(0, 1, 0),
+        cameraPosition: new THREE.Vector3(- 3 + Math.random() * 6, -0.5, -5),
+        autoRotate: false,
+        autoRotateSpeed: -1,
+        camera: 35,
+        // ...
+        // world
+        background: new THREE.Color(0x00a28a),
+        floor: -0.5,
+        // ...
+    }
 
-    // idles
-    {
-      name: 'idle',
-      color: 2,
-      kind: 'idle'
-    },
-    {
-      name: 'run',
-      color: 2,
-      kind: 'idle'
-    },
-    {
-      name: 'Walk',
-      color: 2,
-      kind: 'idle'
-    },
+    // other parameters
+    let near = 0.2, far = 200
+    let shadowMapWidth = 2048, shadowMapHeight = 2048
 
-    // others 
-    {
-      name: 'appeso',
-      color: 1,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'arrampicata',
-      color: 4,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'caduta',
-      color: 5,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'disteso',
-      color: 6,
-      kind: 'special',
-      repetitions: 2,
-      loopInOut: false
-    },
-    {
-      name: 'eremita',
-      color: 7,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'forza',
-      color: 8,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'fuga',
-      color: 0,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: true
-    },
-    {
-      name: 'giustizia',
-      color: 1,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'guardingo',
-      color: 2,
-      kind: 'special',
-      repetitions: 1,
-      loopInOut: false
-    },
-    {
-      name: 'imperatore',
-      color: 3,
-      kind: 'special',
-      repetitions: 1,
-      loopInOut: false
-    },
-    {
-      name: 'imperatrice',
-      color: 4,
-      kind: 'special',
-      repetitions: 1,
-      loopInOut: false
-    },
-    {
-      name: 'innamorati',
-      color: 5,
-      kind: 'special',
-      repetitions: 1,
-      loopInOut: false
-    },
-    {
-      name: 'luna',
-      color: 6,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: true
-    },
-    {
-      name: 'mago',
-      color: 7,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'matto',
-      color: 8,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'Mondo',
-      color: 9,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'morte',
-      color: 10,
-      kind: 'special',
-      repetitions: 1,
-      loopInOut: false
-    },
-    {
-      name: 'noia',
-      color: 0,
-      kind: 'special',
-      repetitions: 1,
-      loopInOut: false
-    },
-    {
-      name: 'porta',
-      color: 1,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'ruota',
-      color: 2,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'salsa',
-      color: 3,
-      kind: 'special',
-      repetitions: 4,
-      loopInOut: false
-    },
-    {
-      name: 'saluto',
-      color: 4,
-      kind: 'special',
-      repetitions: 2,
-      loopInOut: false
-    },
-    {
-      name: 'sole',
-      color: 5,
-      kind: 'special',
-      repetitions: 3,
-      loopInOut: false
-    },
-    {
-      name: 'solleva',
-      color: 6,
-      kind: 'special',
-      repetitions: 1,
-      loopInOut: false
-    },
-    {
-      name: 'tiene',
-      color: 7,
-      kind: 'special',
-      repetitions: 1,
-      loopInOut: false
-    },
-  ];
+    // CAMERA
+    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    camera.position.copy(p.cameraPosition)
+    camera.lookAt(p.lookAtCenter)
 
-  // PARAMETERS
-  const p = {
-    // human
-    idleMinDuration: 4,
-    idleMaxDuration: 10,
-    shadowMode: false,
-    // colors
-    availableColorsHighlights: [
-      0xE48CFF, // Violet
-      0x4DFFFF, // Light blue
-      0xffffff, // White
-      0x0000FF, // Blue
-      0xFFFF00, // Yellow
-      0xFFF3D6, // Light Yellow
-      0xFFCFC0, // Pink
-      0xFF0000, // Red
-      0x93FF22, // Light green
-      0x00CF00, // Dark green
-      0x000000  // Black
-    ],
-    availableColors: [
-      0x532B5F, // Violet
-      0x9eddec, // Light blue
-      0xaaaaaa, // White
-      0x0140A6, // Blue
-      0xFFC702, // Yellow
-      0xFED374, // Light Yellow
-      0xFACDA4, // Pink
-      0xE33117, // Red
-      0x92BE23, // Light green
-      0x1E841E, // Dark green
-      0x232323  // Black
-    ],
-    // objects
-    lightSpeed: 1,
-    // view
-    lookAtCenter: new THREE.Vector3(0, .2, 0),
-    cameraPosition: new THREE.Vector3(0, 1, -10),
-    autoRotate: false,
-    autoRotateSpeed: -.05,
-    camera: 35,
+    // WINDOW RESIZE
+    const onWindowResize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    window.addEventListener('resize', onWindowResize)
+
+    // CONTROLS
+    controls = new OrbitControls(camera, renderer.domElement)
+    controls.enablePan = false
+    controls.enableDamping = true
+    controls.dampingFactor = 0.05
+    controls.minDistance = 5
+    controls.maxDistance = 15
+    controls.maxPolarAngle = Math.PI / 2
+    controls.minPolarAngle = Math.PI / 2 - 0.8
+    controls.maxAzimuthAngle = - Math.PI / 2
+    controls.minAzimuthAngle = Math.PI / 2
+    controls.autoRotate = p.autoRotate
+    controls.autoRotateSpeed = p.autoRotateSpeed
+    controls.target = p.lookAtCenter
+
+    // SCENE
+    scene = new THREE.Scene()
+    scene.background = p.background
+    scene.fog = new THREE.Fog(scene.background, 3, 30)
+    // materials
+    mirrorMate = new THREE.MeshPhongMaterial({
+        color: 0x444444,
+        envMap: cubeTextures[0].texture,
+        side: THREE.DoubleSide,
+        // combine: THREE.addOperation,
+        reflectivity: 1,
+        // specular: 0x999999,
+        fog: true
+    })
+    groundMate = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        roughness: 1,
+        metalness: 0,
+        fog: true,
+    })
+
+    // REFLECTOR
+    let mirrorW = .7
+    let mirrorH = 3
+    mirrorBack = new Reflector(
+        new THREE.PlaneGeometry(mirrorW, mirrorH),
+        {
+            clipBias: 0.003,
+            color: new THREE.Color(0x7f7f7f),
+            textureWidth: window.innerWidth * window.devicePixelRatio,
+            textureHeight: window.innerHeight * window.devicePixelRatio,
+        })
+    mirrorBack.position.y = p.floor + mirrorH / 2
+    mirrorBack.position.z = 3
+    mirrorBack.rotation.y = Math.PI
+    scene.add(mirrorBack)
+    // let's make the mirror backside to do a shadow
+    reflectorBackGeom = new THREE.PlaneGeometry(mirrorW, mirrorH)
+    let reflectorBack = new THREE.Mesh(reflectorBackGeom, mirrorMate)
+    reflectorBack.position.y = p.floor + mirrorW / 2
+    reflectorBack.position.z = 3.05
+    reflectorBack.rotation.y = Math.PI
+    reflectorBack.castShadow = true
+    scene.add(reflectorBack)
+    // let's make some light below the mirror...
+    RectAreaLightUniformsLib.init();
+    let rectLightIntensity = 100
+    const rectLight = new THREE.RectAreaLight(0xffffff, rectLightIntensity, mirrorW, mirrorH)
+    rectLight.position.set(0, p.floor + mirrorH / 2, 3.025)
+    scene.add(rectLight)
+    const rectLightHelper = new RectAreaLightHelper(rectLight)
+    rectLight.add(rectLightHelper)
+
+    // GEOMETRIES
+    // let's make a staircase mirror    
+    let stepW = 1.2
+    let stepH = 0.4
+    stepSideGeom = new THREE.PlaneGeometry(stepW, stepH)
+
+
+    let minSteps = 5
+    let maxStepsDelta = 10
+    for (let r = 0; r < 3; r++) {
+        const steps = new THREE.Group
+        const rampSteps = minSteps + Math.random() * maxStepsDelta
+        for (let s = 0; s < rampSteps; s++) {
+            const stepV = new THREE.Mesh(stepSideGeom, mirrorMate)
+            const stepH = new THREE.Mesh(stepSideGeom, mirrorMate)
+            // front side
+            stepV.position.y = p.floor + 0.2 + s * .4
+            stepV.position.z = s * .4
+            // top side
+            stepH.rotation.x = Math.PI / 2
+            stepH.position.y = p.floor + .4 + s * .4
+            stepH.position.z = .2 + s * .4
+            // shadows
+            stepH.castShadow = true
+            stepV.castShadow = true
+            // add to rampgroup
+            steps.add(stepH)
+            steps.add(stepV)
+        }
+        // find an orientation for the ramp
+        let rampOrientation = Math.floor(Math.random() * 4)
+        steps.rotation.y = Math.PI / 2 * rampOrientation
+        steps.position.x = - 3 + r * 3
+        ramps.push(steps)
+        scene.add(steps)
+    }
+    // let's make a ground
+    groundGeom = new THREE.PlaneGeometry(20, 20)
+    let ground = new THREE.Mesh(groundGeom, groundMate)
+    ground.position.set(0, p.floor, 0)
+    ground.rotation.x = - Math.PI / 2
+    ground.scale.set(100, 100, 100)
+    ground.castShadow = false
+    ground.receiveShadow = true
+    scene.add(ground)
+
+    light = new THREE.DirectionalLight(0xffffff, 10 * PI)
+    light.position.set(0, 2, -5)
+    // light.target = cube
+    light.castShadow = true
+    light.shadow.radius = 8
+    light.shadow.camera.near = 2
+    light.shadow.camera.far = 200
+    light.shadow.bias = 0.0001
+    light.shadow.mapSize.width = shadowMapWidth
+    light.shadow.mapSize.height = shadowMapHeight
+    light.decay = 0
+    scene.add(light)
+    // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
+    // scene.add(lightHelper);
+
+    lightD = new THREE.DirectionalLight(0xffffff, 1 * PI)
+    light.position.set(0, 3, -3)
+    light.target.position.set(0, 0, 0)
+    light.decay = 0
+    scene.add(lightD)
+    // const pointLight = new THREE.PointLight(0xffffff, 2)
+    // pointLight.position.set(20, 20, 20)
+    // scene.add(pointLight)
+    // const pointLight2 = new THREE.PointLight(0xffffff, .1)
+    // pointLight2.position.set(-30, 20, -20)
+    // scene.add(pointLight2)
+    // const ambientLight = new THREE.AmbientLight(0xffffff)
+    // scene.add(ambientLight)
+
+    // GUI
+    // gui = new GUI.GUI()
+    // const nameFolder = gui.addFolder('Name of the folder')
+    // nameFolder.add(cube.rotation, 'x', 0, Math.PI * 2)
+    // nameFolder.open()
     // ...
-    // world
-    background: new THREE.Color(0xffffff),
-    floor: 0,
-    // ...
-  }
 
-  // debug shadowMode
-  if (Math.random() > .5) {
-    p.shadowMode = !p.shadowMode
-  }
+    noise3D = NOISE.createNoise3D()
+    const t0 = Math.random() * 10
 
-  // debug other camera
-  if (Math.random() > .5) {
-    p.lookAtCenter = new THREE.Vector3(0, 1.5, 0)
-    p.cameraPosition = new THREE.Vector3(-2, 2, -4)
-  }
-
-
-  // select main scene color, random choose for now
-  let whichColor = 2 // p.availableColors.length * Math.random() | 0
-  p.background = new THREE.Color(p.availableColors[whichColor])
-
-  // other parameters
-  let near = 0.2, far = 200
-  let shadowMapWidth = 2048, shadowMapHeight = 2048
-
-  // CAMERA
-  camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
-  camera.position.copy(p.cameraPosition)
-  camera.lookAt(p.lookAtCenter)
-
-  // WINDOW RESIZE
-  const onWindowResize = () => {
-    camera.aspect = window.innerWidth / window.innerHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(window.innerWidth, window.innerHeight)
-  }
-  window.addEventListener('resize', onWindowResize)
-
-  // CONTROLS
-  controls = new OrbitControls(camera, renderer.domElement)
-  controls.enablePan = false
-  controls.enableDamping = true
-  controls.dampingFactor = 0.05
-  controls.minDistance = 5
-  controls.maxDistance = 15
-  controls.maxPolarAngle = Math.PI / 2
-  controls.minPolarAngle = Math.PI / 2 - 0.2
-  controls.maxAzimuthAngle = - Math.PI / 2
-  controls.minAzimuthAngle = Math.PI / 2
-  controls.autoRotate = p.autoRotate
-  controls.autoRotateSpeed = p.autoRotateSpeed
-  controls.target = p.lookAtCenter
-
-  // SCENE
-  scene = new THREE.Scene()
-  scene.background = p.background
-  scene.fog = new THREE.Fog(scene.background, 10, 30)
-
-  // MATERIALS
-  humanMate = new THREE.MeshStandardMaterial()
-  humanMate.fog = true
-  humanMate.roughness = .2
-  humanMate.metalness = .9
-  humanMate.flatShading = false
-  humanMate.color = new THREE.Color(0xffffff)
-  if (p.shadowMode) {
-  } else {
-    humanMate.envMap = cubeTextures[0].texture
-  }
-  groundMate = new THREE.MeshStandardMaterial({
-    color: p.background,
-    roughness: 1,
-    metalness: 0,
-    fog: true,
-  })
-
-  // GROUND
-  // let's make a ground
-  groundGeom = new THREE.PlaneGeometry(20, 20)
-  let ground = new THREE.Mesh(groundGeom, groundMate)
-  ground.position.set(0, p.floor, 0)
-  ground.rotation.x = - Math.PI / 2
-  ground.scale.set(100, 100, 100)
-  ground.castShadow = false
-  ground.receiveShadow = true
-  scene.add(ground)
-
-  //
-  // Let's load our low poly human
-  //GLTFLoader
-  let gltfLoaded = false
-  loaderGLTF = new GLTFLoader()
-  loaderGLTF.load(
-    // resource URL
-    './assets/models/human-pose/Orlando_pose_threejs.glb',
-    // called when the resource is loaded
-    (gltf) => {
-      // gltf.animations // Array<THREE.AnimationClip>
-      // gltf.scene.scale.set(0.075, 0.075, 0.075)
-      // gltf.scene.position.x = -0.85
-      // gltf.scene.position.y = 3.35
-      // gltf.scene // THREE.Group
-      // gltf.scenes // Array<THREE.Group>
-      // gltf.asset // Object
-      // gltf.scene.children[0].material = material XXX
-      human = gltf.scene
-      // human.scale.set(1.5, 1.5, 1.5)
-      human.scale.set(1.7, 1.7, 1.7)
-      const box = new THREE.Box3().setFromObject(human);
-      const size = box.getSize(new THREE.Vector3());
-      human.traverse((node) => {
-        if (node.isMesh) {
-          // if (!p.shadowMode) 
-          node.material = humanMate
-          node.castShadow = true
-          node.receiveShadow = true
-        }
-      })
-      human.position.y = p.floor
-      human.position.z = 2
-      human.rotation.y = Math.PI
-      // animations
-      mixer = new THREE.AnimationMixer(human)
-      // action = mixer.clipAction(gltf.animations[Math.floor(Math.random() * gltf.animations.length)]) 
-
-      actions = {}
-      for (let i = 0; i < gltf.animations.length; i++) {
-        const clip = gltf.animations[i];
-        const action = mixer.clipAction(clip);
-        actions[clip.name] = action;
-        // console.log(clip.name)
-      }
-      // console.log(actionsNames)
-      actions["idle"].play()
-      activeAction = actions["idle"];
-      fadeToAction("idle", 0.5);
-      changeSceneColor(actionsToPlay[0]); // idle
-      setTimeout(playDirector, 0);
-      // activeAction.play();
-
-      //
-      scene.add(human)
-      // console.log(human)
-      // let humanMat = human.children[0].material
-      // console.log(humanMat)
-      gltfLoaded = true
-    },
-    (xhr) => {
-      // console.log((xhr.loaded / xhr.total * 100) + '% loaded')
-    },
-    (error) => {
-      // console.log('An error happened loading the GLTF scene')
-    }
-  )
-  const { idleMinDuration, idleMaxDuration } = p;
-  let isFirstAction = true
-  const playDirector = () => {
-
-    // Scegli un'azione di idle casuale
-    const idleActions = actionsToPlay.filter(action => action.kind === 'idle');
-    let randomIdleAction
-    if (!isFirstAction) {
-      randomIdleAction = idleActions[Math.floor(Math.random() * idleActions.length)];
-      fadeToAction(randomIdleAction.name, 0.5);
-      changeSceneColor(randomIdleAction);
-      activeAction.clampWhenFinished = false;
-      activeAction.loop = THREE.LoopRepeat;
-      activeAction.repetitions = Infinity;
-      activeAction.play();
-    } else {
-      randomIdleAction = idleActions[0];
-      isFirstAction = false;
-    }
-
-    // Scegli un'azione speciale in modo casuale
-    const specialActions = actionsToPlay.filter(action => action.kind === 'special');
-    const randomSpecialAction = specialActions[Math.floor(Math.random() * specialActions.length)];
-
-    let repetitions = randomSpecialAction.repetitions;
-    let loopInOut = randomSpecialAction.loopInOut;
-    let direction = 1;
-
-    const onSpecialActionFinished = () => {
-      if (loopInOut) {
-        if (direction === 1) {
-          repetitions--;
-        }
-        if (repetitions > 0) {
-          direction *= -1;
-          activeAction.timeScale = direction;
-          activeAction.paused = false;
-          activeAction.play();
-        } else {
-          // Torna all'azione di idle corrente
-          fadeToAction(randomIdleAction.name, 0.5);
-          changeSceneColor(randomIdleAction);
-          mixer.removeEventListener('finished', onSpecialActionFinished);
-          if (directorTimeOut) {
-            clearTimeout(directorTimeOut);
-            directorTimeOut = 0;
-          }
-          directorTimeOut = setTimeout(playDirector, 0);
-        }
-      } else {
-        repetitions--;
-        if (repetitions > 0) {
-          activeAction.reset();
-          activeAction.play();
-        } else {
-          // Torna all'azione di idle corrente
-          fadeToAction(randomIdleAction.name, 0.5);
-          changeSceneColor(randomIdleAction);
-          mixer.removeEventListener('finished', onSpecialActionFinished);
-          if (directorTimeOut) {
-            clearTimeout(directorTimeOut);
-            directorTimeOut = 0;
-          }
-          directorTimeOut = setTimeout(playDirector, 0);
-        }
-      }
-    };
-
-    const playSpecialAction = () => {
-      fadeToAction(randomSpecialAction.name, 0.5);
-      changeSceneColor(randomSpecialAction);
-      activeAction.clampWhenFinished = true;
-      activeAction.loop = THREE.LoopOnce;
-      activeAction.repetitions = 1;
-      mixer.addEventListener('finished', onSpecialActionFinished);
-      activeAction.play();
-    };
-
-    // Richiama l'azione speciale dopo un intervallo di tempo casuale solo se l'azione corrente è un idle
-    if (idleActions.some(action => action.name === activeAction.getClip().name)) {
-      const randSec = idleMinDuration + Math.random() * (idleMaxDuration - idleMinDuration);
-      if (directorTimeOut) {
-        clearTimeout(directorTimeOut);
-        directorTimeOut = 0;
-      }
-      directorTimeOut = setTimeout(playSpecialAction, randSec * 1000);
-    }
-  }
-
-  const fadeToAction = (name, duration) => {
-    previousAction = activeAction;
-    activeAction = actions[name];
-    activeAction
-      .reset()
-      .setEffectiveTimeScale(1)
-      .setEffectiveWeight(1)
-      .crossFadeFrom(previousAction, duration)
-      .play();
-  }
-  const changeSceneColor = (action, duration = .5) => {
-    const startColor = scene.background.clone();
-    const startColorHighlight = rectLight.color.clone();
-    const endColor = new THREE.Color(p.availableColors[action.color]);
-    const endColorHighlight = new THREE.Color(p.availableColorsHighlights[action.color]);
-
-    let startTime = performance.now();
-
-    const easeOutQuad = (t) => {
-      return 1 - (1 - t) * (1 - t);
-    };
-
+    // ANIMATE
     const animate = () => {
-      const elapsedTime = (performance.now() - startTime) / 1000;
-      const t = Math.min(elapsedTime / duration, 1);
-      const easedT = easeOutQuad(t);
+        if (showStats) stats.begin() // XXX
 
-      scene.background = startColor.clone().lerp(endColor, easedT);
-      scene.fog.color = scene.background;
-      if (p.shadowMode)
-        humanMate.color = scene.background;
-      else
-        humanMate.color = new THREE.Color(0xffffff)
-      groundMate.color = scene.background;
-      rectLight.color = startColorHighlight.clone().lerp(endColorHighlight, easedT);
+        if (p.animate) {
+            // ANIMATION
+            const t = t0 + performance.now() * 0.0001
+            const t1 = t * p.lightSpeed + 0
+            const t2 = t1 + 10
+            camera.position.set(noise3D(t1, 0, 0) * 2, noise3D(0, t1 + 4, 0) * 1, -6)
+            controls.target.set(noise3D(t2, 0, 0) * 2, 1, noise3D(0, t2 + 4, 0) * 2)
+            // ...
+        }
+        // ...
 
-      if (t < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        p.background = endColor;
-      }
-    };
+        controls.update()
+        renderer.render(scene, camera) // RENDER
+        if (showStats) stats.end() // XXX
 
-    animate();
-  }
-
-  // LIGHTS
-  RectAreaLightUniformsLib.init();
-  let rectLightWidth = 4
-  let rectLightHeight = 5.5
-  let rectLightIntensity = 5 * PI
-  rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], rectLightIntensity, rectLightWidth, rectLightHeight)
-  rectLight.position.set(0, p.floor + rectLightHeight / 2, 10)
-  scene.add(rectLight)
-  rectLightHelper = new RectAreaLightHelper(rectLight)
-  rectLight.add(rectLightHelper)
-
-  light = new THREE.DirectionalLight(0xffffff, .4 * PI)
-  light.position.set(0, 2, 10)
-  light.castShadow = true
-  light.shadow.radius = 8
-  light.shadow.camera.near = 2
-  light.shadow.camera.far = 200
-  light.shadow.bias = 0.0001
-  light.shadow.mapSize.width = shadowMapWidth
-  light.shadow.mapSize.height = shadowMapHeight
-  light.decay = 0
-  scene.add(light)
-
-  // NOISE
-  noise3D = NOISE.createNoise3D()
-  const t0 = Math.random() * 10
-
-  clock = new THREE.Clock()
-
-  // ANIMATE
-  const animate = () => {
-    if (showStats) stats.begin() // XXX
-
-    // ANIMATION
-    const t = t0 + performance.now() * 0.0001
-    const t1 = t * p.lightSpeed + 0
-    light.position.x = -3 + noise3D(0, t1, 0) * 6
-    // ...
-
-    let dt = clock.getDelta()
-    if (mixer) mixer.update(dt)
-
-    controls.update()
-    renderer.render(scene, camera) // RENDER
-    if (showStats) stats.end() // XXX
-
-    animation = requestAnimationFrame(animate) // CIAK
-  }
-  animate()
-
+        animation = requestAnimationFrame(animate) // CIAK
+    }
+    animate()
 }
 
 export function dispose() {
-  cancelAnimationFrame(animation)
-  controls?.dispose()
-  groundGeom?.dispose()
-  groundMate?.dispose()
-  humanMate?.dispose()
-  noise3D = null
-  if (human) {
-    human.traverse((child) => {
-      if (child.isMesh) {
-        child.geometry.dispose();
-        child.material.dispose();
-      }
+    cancelAnimationFrame(animation)
+    controls?.dispose()
+    groundGeom?.dispose()
+    reflectorBackGeom?.dispose()
+    groundMate?.dispose()
+    stepSideGeom?.dispose()
+    mirrorMate?.dispose()
+    mirrorBack?.dispose()
+    noise3D = null
+    ramps.forEach(ramp => scene.remove(ramp))
+    ramps.length = 0
+    scene.traverse((child) => {
+        if (child.geometry) {
+            child.geometry.dispose();
+        }
+        if (child.material) {
+            child.material.dispose();
+        }
     });
-    scene.remove(human);
-  }
-  if (mixer) {
-    mixer.stopAllAction();
-    mixer.uncacheRoot(mixer.getRoot());
-    mixer = null;
-  }
-  scene.traverse((child) => {
-    if (child.geometry) {
-      child.geometry.dispose();
-    }
-    if (child.material) {
-      child.material.dispose();
-    }
-  });
-  if (actions) {
-    for (const key in actions) {
-      if (actions.hasOwnProperty(key)) {
-        const action = actions[key];
-        action.stop();
-      }
-    }
-    actions = null;
-  }
-  if (action) {
-    action.stop();
-    action = null;
-  }
-  rectLight?.dispose();
-  rectLightHelper?.dispose();
-  light?.dispose();
-  // scene = null;
-  camera = null;
-  if (directorTimeOut) {
-    clearTimeout(directorTimeOut);
-    directorTimeOut = 0;
-  }
-  // gui?.destroy()
-  // ...
-  window.removeEventListener('resize', onWindowResize)
+    light?.dispose()
+    lightD?.dispose()
+    // scene = null;
+    camera = null;
+    // gui?.destroy()
+    // ...
+    window.removeEventListener('resize', onWindowResize)
 }

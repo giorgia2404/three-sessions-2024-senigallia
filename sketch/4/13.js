@@ -1,8 +1,5 @@
 // TAROTS - ALL
 
-// Todo: 
-// - ligth angle for each position and easeout transition (like colors) 
-
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
@@ -21,14 +18,14 @@ let human, humanMate, groundMate
 let noise3D
 let rectLight, light, rectLightHelper
 let directorTimeOut
+let fireFlyMate
+
+const api = { state: 'Walk' };
 
 export function sketch() {
   // console.log("Sketch launched")
 
   actionsToPlay = [
-    // instructions:
-    // kind: 'idle' < actions for idle mode
-    // kind: 'special' < other actions to play randomly with parameters (repetitions, loopInOut, ...)
 
     // idles
     {
@@ -248,7 +245,7 @@ export function sketch() {
     availableColors: [
       0x532B5F, // Violet
       0x9eddec, // Light blue
-      0xaaaaaa, // White
+      0xffffff, // White
       0x0140A6, // Blue
       0xFFC702, // Yellow
       0xFED374, // Light Yellow
@@ -266,13 +263,14 @@ export function sketch() {
     autoRotate: false,
     autoRotateSpeed: -.05,
     camera: 35,
+    fireFlySpeed: .2,
     // ...
     // world
     background: new THREE.Color(0xffffff),
     floor: 0,
     // ...
   }
-
+  
   // debug shadowMode
   if (Math.random() > .5) {
     p.shadowMode = !p.shadowMode
@@ -329,13 +327,17 @@ export function sketch() {
   // MATERIALS
   humanMate = new THREE.MeshStandardMaterial()
   humanMate.fog = true
-  humanMate.roughness = .2
-  humanMate.metalness = .9
-  humanMate.flatShading = false
-  humanMate.color = new THREE.Color(0xffffff)
   if (p.shadowMode) {
+    humanMate.color = p.background
+    humanMate.roughness = .5
+    humanMate.metalness = 0
+    humanMate.flatShading = true
   } else {
+    humanMate.color = new THREE.Color(0xffffff)
     humanMate.envMap = cubeTextures[0].texture
+    humanMate.roughness = .2
+    humanMate.metalness = 1
+    humanMate.flatShading = false
   }
   groundMate = new THREE.MeshStandardMaterial({
     color: p.background,
@@ -343,7 +345,15 @@ export function sketch() {
     metalness: 0,
     fog: true,
   })
+  fireFlyMate = new THREE.MeshStandardMaterial({
+    color: 0xFFFFFF,
+    emissive: 0xFFFFFF,
+    emissiveIntensity: 10,
+    roughness: 1,
+    metalness: 0,
+    fog: false,
 
+})
   // GROUND
   // let's make a ground
   groundGeom = new THREE.PlaneGeometry(20, 20)
@@ -380,8 +390,7 @@ export function sketch() {
       const size = box.getSize(new THREE.Vector3());
       human.traverse((node) => {
         if (node.isMesh) {
-          // if (!p.shadowMode) 
-          node.material = humanMate
+          if (!p.shadowMode) node.material = humanMate
           node.castShadow = true
           node.receiveShadow = true
         }
@@ -422,7 +431,9 @@ export function sketch() {
       // console.log('An error happened loading the GLTF scene')
     }
   )
-  const { idleMinDuration, idleMaxDuration } = p;
+
+  const minDuration = p.idleMinDuration //secs
+  const maxDuration = p.idleMaxDuration
   let isFirstAction = true
   const playDirector = () => {
 
@@ -502,7 +513,7 @@ export function sketch() {
 
     // Richiama l'azione speciale dopo un intervallo di tempo casuale solo se l'azione corrente è un idle
     if (idleActions.some(action => action.name === activeAction.getClip().name)) {
-      const randSec = idleMinDuration + Math.random() * (idleMaxDuration - idleMinDuration);
+      const randSec = minDuration + Math.random() * (maxDuration - minDuration);
       if (directorTimeOut) {
         clearTimeout(directorTimeOut);
         directorTimeOut = 0;
@@ -557,18 +568,96 @@ export function sketch() {
     animate();
   }
 
+  // FIREFLIES
+  const fireFlyGeom = new THREE.SphereGeometry(.01, 12, 2)
+  const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate)
+  const fireFlyLight = new THREE.PointLight(0xFFFFFF, 10, 2); 
+  fireFlyLight.castShadow = true; 
+  scene.add(fireFlyLight);
+  scene.add(fireFly)
+
+  const fireFlyGeom1 = new THREE.SphereGeometry(.01, 10, 2)
+  const fireFly1 = new THREE.Mesh(fireFlyGeom1, fireFlyMate)
+  const fireFlyLight1 = new THREE.PointLight(0xFFFFFF, 12, 2); 
+  fireFlyLight1.castShadow = true; 
+  scene.add(fireFlyLight1);
+  scene.add(fireFly1)
+
+  const fireFlyGeom2 = new THREE.SphereGeometry(.01, 10, 2)
+  const fireFly2 = new THREE.Mesh(fireFlyGeom2, fireFlyMate)
+  const fireFlyLight2 = new THREE.PointLight(0xFFFFFF, 12, 2); 
+  fireFlyLight2.castShadow = true; 
+  scene.add(fireFlyLight2);
+  scene.add(fireFly2)
+
+  const fireFlyGeom3 = new THREE.SphereGeometry(.01, 12, 2)
+  const fireFly3 = new THREE.Mesh(fireFlyGeom3, fireFlyMate)
+  const fireFlyLight3 = new THREE.PointLight(0xFFFFFF, 10, 2); 
+  fireFlyLight3.castShadow = true; 
+  scene.add(fireFlyLight3);
+  scene.add(fireFly3)
+
+  const fireFlyGeom4 = new THREE.SphereGeometry(.01, 10, 2)
+  const fireFly4 = new THREE.Mesh(fireFlyGeom4, fireFlyMate)
+  const fireFlyLight4 = new THREE.PointLight(0xFFFFFF, 12, 2); 
+  fireFlyLight4.castShadow = true; 
+  scene.add(fireFlyLight4);
+  scene.add(fireFly4)
+
+  const fireFlyGeom5 = new THREE.SphereGeometry(.01, 10, 2)
+  const fireFly5 = new THREE.Mesh(fireFlyGeom5, fireFlyMate)
+  const fireFlyLight5 = new THREE.PointLight(0xFFFFFF, 12, 2); 
+  fireFlyLight5.castShadow = true; 
+  scene.add(fireFlyLight5);
+  scene.add(fireFly5)
+
+  const fireFlyGeom6 = new THREE.SphereGeometry(.01, 10, 2)
+  const fireFly6 = new THREE.Mesh(fireFlyGeom6, fireFlyMate)
+  const fireFlyLight6 = new THREE.PointLight(0xFFFFFF, 12, 2); 
+  fireFlyLight6.castShadow = true; 
+  scene.add(fireFlyLight6);
+  scene.add(fireFly6)
+
+  const fireFlyGeom7 = new THREE.SphereGeometry(.01, 10, 2)
+  const fireFly7 = new THREE.Mesh(fireFlyGeom7, fireFlyMate)
+  const fireFlyLight7 = new THREE.PointLight(0xFFFFFF, 12, 2); 
+  fireFlyLight7.castShadow = true; 
+  scene.add(fireFlyLight7);
+  scene.add(fireFly7)
+
+  const fireFlyGeom8 = new THREE.SphereGeometry(.01, 12, 2)
+  const fireFly8 = new THREE.Mesh(fireFlyGeom8, fireFlyMate)
+  const fireFlyLight8 = new THREE.PointLight(0xFFFFFF, 10, 2); 
+  fireFlyLight8.castShadow = true; 
+  scene.add(fireFlyLight8);
+  scene.add(fireFly8)
+
+  const fireFlyGeom9 = new THREE.SphereGeometry(.01, 10, 2)
+  const fireFly9 = new THREE.Mesh(fireFlyGeom9, fireFlyMate)
+  const fireFlyLight9 = new THREE.PointLight(0xFFFFFF, 12, 2); 
+  fireFlyLight9.castShadow = true; 
+  scene.add(fireFlyLight9);
+  scene.add(fireFly9)
+
+  const fireFlyGeom10 = new THREE.SphereGeometry(.01, 10, 2)
+  const fireFly10 = new THREE.Mesh(fireFlyGeom10, fireFlyMate)
+  const fireFlyLight10 = new THREE.PointLight(0xFFFFFF, 12, 2); 
+  fireFlyLight10.castShadow = true; 
+  scene.add(fireFlyLight10);
+  scene.add(fireFly10)
+
   // LIGHTS
   RectAreaLightUniformsLib.init();
   let rectLightWidth = 4
   let rectLightHeight = 5.5
-  let rectLightIntensity = 5 * PI
+  let rectLightIntensity = 5
   rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], rectLightIntensity, rectLightWidth, rectLightHeight)
   rectLight.position.set(0, p.floor + rectLightHeight / 2, 10)
   scene.add(rectLight)
   rectLightHelper = new RectAreaLightHelper(rectLight)
   rectLight.add(rectLightHelper)
 
-  light = new THREE.DirectionalLight(0xffffff, .4 * PI)
+  light = new THREE.DirectionalLight(0xffffff, .4)
   light.position.set(0, 2, 10)
   light.castShadow = true
   light.shadow.radius = 8
@@ -577,7 +666,6 @@ export function sketch() {
   light.shadow.bias = 0.0001
   light.shadow.mapSize.width = shadowMapWidth
   light.shadow.mapSize.height = shadowMapHeight
-  light.decay = 0
   scene.add(light)
 
   // NOISE
@@ -598,6 +686,73 @@ export function sketch() {
 
     let dt = clock.getDelta()
     if (mixer) mixer.update(dt)
+
+    const t2 = t * p.fireFlySpeed + 10
+            fireFly.position.x = 0 + noise3D(0, t2, 0) * 2
+            fireFly.position.y = 2 + noise3D(t2 + 4, 0, 0) * .8
+            fireFly.position.z = 1 + noise3D(0, 0, t2 + 8) * 2
+            fireFlyLight.position.copy(fireFly.position)
+
+    const t3 = t * p.fireFlySpeed + 10
+            fireFly1.position.x = 1 + noise3D(0, t3, 0) * 2
+            fireFly1.position.y = 3 + noise3D(t3 + 4, 0, 0) * .8
+            fireFly1.position.z = 2 + noise3D(0, 0, t3 + 8) * 2
+            fireFlyLight1.position.copy(fireFly1.position)
+
+    const t4 = t * p.fireFlySpeed + 10
+            fireFly2.position.x = 0 + noise3D(0, t4, 0) * 2
+            fireFly2.position.y = 2 + noise3D(t4 + 4, 0, 0) * .8
+            fireFly2.position.z = 4 + noise3D(0, 0, t4 + 8) * 2
+            fireFlyLight2.position.copy(fireFly2.position)
+
+    const t5 = t * p.fireFlySpeed + 10
+            fireFly3.position.x = 1 + noise3D(0, t5, 0) * 2
+            fireFly3.position.y = 4 + noise3D(t5 + 4, 0, 0) * .8
+            fireFly3.position.z = 2 + noise3D(0, 0, t5 + 8) * 2
+            fireFlyLight3.position.copy(fireFly3.position)
+
+    const t6 = t * p.fireFlySpeed + 10
+            fireFly4.position.x = 1 + noise3D(0, t6, 0) * 2
+            fireFly4.position.y = 2 + noise3D(t6 + 4, 0, 0) * .8
+            fireFly4.position.z = 3 + noise3D(0, 0, t6 + 8) * 2
+            fireFlyLight4.position.copy(fireFly4.position)
+
+    const t7 = t * p.fireFlySpeed + 10
+            fireFly5.position.x = 2 + noise3D(0, t7, 0) * 2
+            fireFly5.position.y = 4 + noise3D(t7 + 4, 0, 0) * .8
+            fireFly5.position.z = 4 + noise3D(0, 0, t7 + 8) * 2
+            fireFlyLight5.position.copy(fireFly5.position)
+
+    const t8 = t * p.fireFlySpeed + 10
+            fireFly6.position.x = 1 + noise3D(0, t8, 0) * 2
+            fireFly6.position.y = 4 + noise3D(t8 + 4, 0, 0) * .8
+            fireFly6.position.z = 3 + noise3D(0, 0, t8 + 8) * 2
+            fireFlyLight6.position.copy(fireFly6.position)
+
+    const t9 = t * p.fireFlySpeed + 10
+            fireFly7.position.x = 3 + noise3D(0, t9, 0) * 2
+            fireFly7.position.y = 2 + noise3D(t9 + 4, 0, 0) * .8
+            fireFly7.position.z = 4 + noise3D(0, 0, t9 + 8) * 2
+            fireFlyLight7.position.copy(fireFly7.position)
+
+    const t10 = t * p.fireFlySpeed + 10
+            fireFly8.position.x = 1 + noise3D(0, t10, 0) * 2
+            fireFly8.position.y = 4 + noise3D(t10 + 4, 0, 0) * .8
+            fireFly8.position.z = 1 + noise3D(0, 0, t10 + 8) * 2
+            fireFlyLight8.position.copy(fireFly8.position)
+
+    const t11 = t * p.fireFlySpeed + 10
+            fireFly9.position.x = 1 + noise3D(0, t11, 0) * 2
+            fireFly9.position.y = 4 + noise3D(t11 + 4, 0, 0) * .8
+            fireFly9.position.z = 1 + noise3D(0, 0, t11 + 8) * 2
+            fireFlyLight9.position.copy(fireFly9.position)
+
+    const t12 = t * p.fireFlySpeed + 10
+            fireFly10.position.x = 3 + noise3D(0, t12, 0) * 2
+            fireFly10.position.y = 2 + noise3D(t12 + 4, 0, 0) * .8
+            fireFly10.position.z = 2 + noise3D(0, 0, t12 + 8) * 2
+            fireFlyLight10.position.copy(fireFly10.position)
+
 
     controls.update()
     renderer.render(scene, camera) // RENDER
@@ -651,10 +806,10 @@ export function dispose() {
     action.stop();
     action = null;
   }
-  rectLight?.dispose();
-  rectLightHelper?.dispose();
-  light?.dispose();
-  // scene = null;
+  rectLight.dispose();
+  rectLightHelper.dispose();
+  light.dispose();
+  scene = null;
   camera = null;
   if (directorTimeOut) {
     clearTimeout(directorTimeOut);
