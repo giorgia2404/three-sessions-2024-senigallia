@@ -1,53 +1,45 @@
-//TEST CLOTH + MIRRORS > ORLANDO RECUPERA IL SENNO
+//DANCING CLOTHES 
+//ANGELICA E MEDORO
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 
-import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
-import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
-
-let scene, animation, onWindowResize, controls, onMouseMove
-let groundGeom
-let groundMate, clothMaterial, mirrorMate, mirrorMate2
-let world
-let noise3D
-let cloth, clothParticles, constraints = []
-let flowField
-
-//aggiunta specchi
-let mirrorBack; // reflector
-let mirrorBack2; // reflector
-let mirrorBack3; // reflector
-let reflectorBackGeom, reflectorBackGeom2, reflectorBackGeom3
-
+let scene, animation, onWindowResize, controls, onMouseMove;
+let groundGeom;
+let groundMate, clothMaterial, mirrorMate;
+let world, groundBody;
+let noise3D;
+let cloth, cloth2, clothParticles, clothParticles2, constraints = [];
+let flowField, flowField2;
 
 export function sketch() {
-
-    let mouse = new THREE.Vector2()
+    let mouse = new THREE.Vector2();
     onMouseMove = (event) => {
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     };
     window.addEventListener('mousemove', onMouseMove);
 
     const p = {
         // cloth
-        clothWidth: 15,
-        clothHeight: 15,
-        clothResolution: 22,
+        clothWidth: 14,
+        clothHeight: 14,
+        clothResolution: 12,
+        clothElasticity: .5,
         // view
-        lookAtCenter: new THREE.Vector3(0, 5, 3),
-        cameraPosition: new THREE.Vector3(0, 1, - 25 - Math.random() * 10),
-        autoRotate: false,
-        autoRotateSpeed: -1 + Math.random() * 2,
+        lookAtCenter: new THREE.Vector3(0, 6, 0),
+        cameraPosition: new THREE.Vector3(-10, 2, 20),
+        autoRotate: true,
+        autoRotateSpeed: -1.5 + Math.random() * 3,
         camera: 35,
         // world
         background: new THREE.Color(0x000000),
         clothMass: 1,
-        gravity: -9,
+        gravity: 0, //  -Math.random() * .2,
         wind: true,
-        windStrength: 2 + Math.random() * 1,
-        floor: -2,
+        windStrength: 0.5 + Math.random() * .2,
+        // windStrength2: 0.9 + Math.random() * .2,
+        mouse: false,
+        floor: 0,
     };
 
     // other parameters
@@ -56,9 +48,9 @@ export function sketch() {
     let paused = false;
 
     // CAMERA
-    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
-    camera.position.copy(p.cameraPosition)
-    camera.lookAt(p.lookAtCenter)
+    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far);
+    camera.position.copy(p.cameraPosition);
+    camera.lookAt(p.lookAtCenter);
 
     // WINDOW RESIZE
     onWindowResize = () => {
@@ -69,13 +61,13 @@ export function sketch() {
     window.addEventListener('resize', onWindowResize);
 
     // SCENE
-    scene = new THREE.Scene()
-    scene.background = p.background
-    scene.fog = new THREE.Fog(scene.background, 20, 100)
+    scene = new THREE.Scene();
+    scene.background = p.background;
+    scene.fog = new THREE.Fog(scene.background, 15, 80);
     world = new CANNON.World({
         gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
-    world.solver.iterations = 10
+    world.solver.iterations = 20;
 
     // MATERIALS
     groundMate = new THREE.MeshStandardMaterial({
@@ -83,207 +75,129 @@ export function sketch() {
         roughness: 1,
         metalness: 0,
         fog: true,
-    })
-
-    // REFLECTOR 1
-    let mirrorW = 5;
-    let mirrorH = 15;
-
-    mirrorBack = new Reflector(
-        new THREE.PlaneGeometry(mirrorW, mirrorH),
-        {
-            clipBias: 0.003,
-            color: new THREE.Color(0x7f7f7f),
-            textureWidth: window.innerWidth * window.devicePixelRatio,
-            textureHeight: window.innerHeight * window.devicePixelRatio,
-        });
-    mirrorBack.position.y = p.floor + mirrorH / 2 - 2;
-    mirrorBack.position.z = 15;
-    mirrorBack.rotation.y = Math.PI;
-    scene.add(mirrorBack);
-    // let's make the mirror backside to do a shadow
-    reflectorBackGeom = new THREE.PlaneGeometry(mirrorW, mirrorH)
-    let reflectorBack = new THREE.Mesh(reflectorBackGeom, mirrorMate)
-    reflectorBack.position.y = mirrorBack.position.y
-    reflectorBack.position.z = mirrorBack.position.z + 0.08
-    reflectorBack.rotation.y = mirrorBack.rotation.y
-    reflectorBack.castShadow = true
-    scene.add(reflectorBack)
-    // let's make some light below the mirror...
-    RectAreaLightUniformsLib.init();
-    let rectLightIntensity = 100
-    const rectLight = new THREE.RectAreaLight(0xffffff, rectLightIntensity, mirrorW, mirrorH)
-    rectLight.position.set(0, mirrorBack.position.y, mirrorBack.position.z + 0.01)
-    scene.add(rectLight)
-    const rectLightHelper = new RectAreaLightHelper(rectLight)
-    // rectLight.add(rectLightHelper)
-
-    // REFLECTOR 2
-    mirrorBack2 = new Reflector(
-        new THREE.PlaneGeometry(mirrorW, mirrorH),
-        {
-            clipBias: 0.003,
-            color: new THREE.Color(0x7f7f7f),
-            textureWidth: window.innerWidth * window.devicePixelRatio,
-            textureHeight: window.innerHeight * window.devicePixelRatio,
-        });
-    mirrorBack2.position.y = p.floor + mirrorH / 2 - 2;
-    mirrorBack2.position.z = 12;
-    mirrorBack2.position.x = 12;
-    mirrorBack2.rotation.y = Math.PI - Math.PI / 3 + 1.6;
-    scene.add(mirrorBack2);
-    // let's make the mirror backside to do a shadow
-    // reflectorBackGeom2 = new THREE.PlaneGeometry(mirrorW, mirrorH)
-    // let reflectorBack2 = new THREE.Mesh(reflectorBackGeom2, mirrorMate)
-    // reflectorBack2.position.y = mirrorBack2.position.y
-    // reflectorBack2.position.z = mirrorBack2.position.z + 0.08
-    // reflectorBack2.position.x = mirrorBack2.position.x
-    // reflectorBack2.rotation.y = mirrorBack2.rotation.y
-    // reflectorBack2.castShadow = true
-    // scene.add(reflectorBack2)
-
-    // REFLECTOR 3
-    mirrorBack3 = new Reflector(
-        new THREE.PlaneGeometry(mirrorW, mirrorH),
-        {
-            clipBias: 0.003,
-            color: new THREE.Color(0x7f7f7f),
-            textureWidth: window.innerWidth * window.devicePixelRatio,
-            textureHeight: window.innerHeight * window.devicePixelRatio,
-        });
-    mirrorBack3.position.y = p.floor + mirrorH / 2 - 2;
-    mirrorBack3.position.z = 12;
-    mirrorBack3.position.x = -12;
-    mirrorBack3.rotation.y = Math.PI - Math.PI / 3 + 0.5;
-    scene.add(mirrorBack3);
-    // let's make the mirror backside to do a shadow
-    // reflectorBackGeom3 = new THREE.PlaneGeometry(mirrorW, mirrorH)
-    // let reflectorBack3 = new THREE.Mesh(reflectorBackGeom3, mirrorMate)
-    // reflectorBack3.position.y = mirrorBack3.position.y
-    // reflectorBack3.position.z = mirrorBack3.position.z + 0.08
-    // reflectorBack3.position.x = mirrorBack3.position.x
-    // reflectorBack3.rotation.y = mirrorBack3.rotation.y
-    // reflectorBack3.castShadow = true
-    // scene.add(reflectorBack3)
+    });
 
     // Static ground plane
-    groundGeom = new THREE.PlaneGeometry(20, 20)
-    let ground = new THREE.Mesh(groundGeom, groundMate)
-    ground.position.set(0, p.floor, 0)
-    ground.rotation.x = - Math.PI / 2
-    ground.scale.set(100, 100, 100)
-    ground.castShadow = true
-    ground.receiveShadow = true
-    scene.add(ground)
-    const groundBody = new CANNON.Body({
-        position: new CANNON.Vec3(0, p.floor - 1, 0),
+    groundGeom = new THREE.PlaneGeometry(20, 20);
+    let ground = new THREE.Mesh(groundGeom, groundMate);
+    ground.position.set(0, p.floor, 0);
+    ground.rotation.x = - Math.PI / 2;
+    ground.scale.set(100, 100, 100);
+    ground.castShadow = false;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    groundBody = new CANNON.Body({
+        position: new CANNON.Vec3(0, p.floor + 0.005, 0),
         mass: 0,
         shape: new CANNON.Plane(),
     });
     groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
     groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
     world.addBody(groundBody);
-    ground.position.copy(groundBody.position);
-    ground.quaternion.copy(groundBody.quaternion);
-
-
 
     // CONTROLS
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = false;
     controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
+    controls.dampingFactor = 0.005;
     controls.minDistance = 5;
     controls.maxDistance = 40;
-    controls.maxPolarAngle = Math.PI / 2 + 0.2;
-    controls.minPolarAngle = Math.PI / 2 - 0.4;
+    controls.maxPolarAngle = Math.PI / 2;
+    controls.minPolarAngle = 0;
     controls.autoRotate = p.autoRotate;
     controls.autoRotateSpeed = p.autoRotateSpeed;
     controls.target = p.lookAtCenter;
 
     // CLOTH
-    const cWidth = p.clothWidth
-    const cHeight = p.clothHeight
-    const Nx = p.clothResolution
-    const Ny = p.clothResolution
-    const clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny)
+    const cWidth = p.clothWidth;
+    const cHeight = p.clothHeight;
+    const Nx = p.clothResolution;
+    const Ny = p.clothResolution;
+    const clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny);
     mirrorMate = new THREE.MeshPhongMaterial({
         color: 0x444444,
         envMap: cubeTextures[0].texture,
         side: THREE.DoubleSide,
         flatShading: true,
-        // combine: THREE.addOperation,
-        // reflectivity: 0,
-        //specular: 0x999999,
-        // fog: true
-    })
+        reflectivity: 1,
+        specular: 0x999999,
+        fog: true
+    });
 
-    cloth = new THREE.Mesh(clothGeometry, mirrorMate)
-    cloth.castShadow = true
-    // cloth.receiveShadow = true
-    scene.add(cloth)
+    // CLOTH 1
+    cloth = new THREE.Mesh(clothGeometry, mirrorMate);
+    cloth.castShadow = true;
+    scene.add(cloth);
 
-    const restDistanceX = cWidth / Nx
-    const restDistanceY = cHeight / Ny
-    clothParticles = []
-    const mass = (p.clothMass / Nx) * Ny
+    const contactResolution = 1
+    const cYstarting = p.floor + cHeight / 2 // + Math.random() * cHeight / 2;
+    const restDistanceX = cWidth / Nx;
+    const restDistanceY = cHeight / Ny;
+    clothParticles = [];
+    const mass = (p.clothMass / Nx) * Ny;
+    const particleRadius = restDistanceX * 0.5; // Radius for collision spheres
 
-    const connectParticles = (x1, y1, x2, y2) => {
-        const particleA = clothParticles[x1][y1];
-        const particleB = clothParticles[x2][y2];
+
+    // XXXX
+
+    const connectParticles = (particles, x1, y1, x2, y2) => {
+        const particleA = particles[x1][y1];
+        const particleB = particles[x2][y2];
         const distance = particleA.position.distanceTo(particleB.position);
-        const constraint = new CANNON.DistanceConstraint(particleA, particleB, distance);
+        const constraint = new CANNON.DistanceConstraint(particleA, particleB, distance, p.clothElasticity);
         world.addConstraint(constraint);
         constraints.push(constraint);
-    }
-
-    // definiamo il punto che sta al centro dell'area
-    const centerX = Math.floor(Nx / 2);
-    const centerY = Math.floor(Ny / 2);
+    };
 
     for (let x = 0; x <= Nx; x++) {
         clothParticles.push([]);
         for (let y = 0; y <= Ny; y++) {
             const hangingPosition = new CANNON.Vec3(
                 (x - Nx * 0.5) * restDistanceX,
-                p.floor + cHeight + 4,
+                cYstarting,
                 (y - Ny * 0.5) * restDistanceY
             );
 
+            let particleShape;
+            if (x % contactResolution === 0 && y % contactResolution === 0) {
+                particleShape = new CANNON.Sphere(particleRadius);
+            } else {
+                particleShape = new CANNON.Particle();
+            }
             const particle = new CANNON.Body({
-                mass: (x === centerX && y === centerY) ? 0 : mass,  // Fissa solo la particella centrale del tessuto
+                mass: mass,
                 position: hangingPosition,
-                shape: new CANNON.Particle(),
+                shape: particleShape,
                 velocity: new CANNON.Vec3(0, 0, 0),
-                linearDamping: 0.5
+                linearDamping: 0.5,
+                material: clothMaterial
             });
+
+            particle.collisionFilterGroup = 1 | 2;
+            particle.collisionFilterMask = 1 | 2;
 
             clothParticles[x].push(particle);
             world.addBody(particle);
         }
     }
-
-    // Constrains
+    // Constrains cloth 1
     for (let x = 0; x <= Nx; x++) {
         for (let y = 0; y <= Ny; y++) {
             if (x < Nx && y < Ny) {
-                connectParticles(x, y, x, y + 1);
-                connectParticles(x, y, x + 1, y);
-                // Aggiungi vincoli diagonali
-                connectParticles(x, y, x + 1, y + 1);
+                connectParticles(clothParticles, x, y, x, y + 1);
+                connectParticles(clothParticles, x, y, x + 1, y);
+                connectParticles(clothParticles, x, y, x + 1, y + 1);
                 if (y > 0) {
-                    connectParticles(x, y, x + 1, y - 1);
+                    connectParticles(clothParticles, x, y, x + 1, y - 1);
                 }
             } else if (x === Nx && y < Ny) {
-                connectParticles(x, y, x, y + 1);
+                connectParticles(clothParticles, x, y, x, y + 1);
             } else if (x < Nx && y === Ny) {
-                connectParticles(x, y, x + 1, y);
+                connectParticles(clothParticles, x, y, x + 1, y);
             }
         }
     }
-
-
-    // Initialize the vertices of the cloth
+    // Initialize the vertices of cloth 1
     const vertices = [];
     for (let x = 0; x <= Nx; x++) {
         for (let y = 0; y <= Ny; y++) {
@@ -292,55 +206,120 @@ export function sketch() {
     }
     clothGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices.length * 3), 3));
 
-    const light = new THREE.DirectionalLight(0xffffff, 10)
-    light.position.set(15, 20, -4)
-    light.target.position.set(0, 0, 12)
-    light.castShadow = true
-    light.shadow.radius = 16
-    light.shadow.camera.near = 2
-    light.shadow.camera.far = 200
-    light.shadow.bias = 0.0001
-    light.shadow.mapSize.width = shadowMapWidth
-    light.shadow.mapSize.height = shadowMapHeight
-    scene.add(light)
-    const lightHelper = new THREE.DirectionalLightHelper(light, 5);
-    // scene.add(lightHelper);
+    // CLOTH 2
+    const clothGeometry2 = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny);
+    cloth2 = new THREE.Mesh(clothGeometry2, mirrorMate);
+    cloth2.castShadow = true;
+    scene.add(cloth2);
 
-    const lightD = new THREE.DirectionalLight(0xffffff, 20)
-    lightD.position.set(0, 10, 7)
-    lightD.target.position.set(0, 10, -7)
-    scene.add(lightD)
+    const cYstarting2 = cYstarting + 3; // Posizione diversa per il secondo telo
+    clothParticles2 = [];
+
+    for (let x = 0; x <= Nx; x++) {
+        clothParticles2.push([]);
+        for (let y = 0; y <= Ny; y++) {
+            const hangingPosition = new CANNON.Vec3(
+                (x - Nx * 0.5) * restDistanceX,
+                cYstarting2,
+                (y - Ny * 0.5) * restDistanceY
+            );
+
+            let particleShape;
+            if (x % contactResolution === 0 && y % contactResolution === 0) {
+                particleShape = new CANNON.Sphere(particleRadius);
+            } else {
+                particleShape = new CANNON.Particle();
+            }
+            const particle = new CANNON.Body({
+                mass: mass,
+                position: hangingPosition,
+                shape: particleShape,
+                velocity: new CANNON.Vec3(0, 0, 0),
+                linearDamping: 0.5,
+                material: clothMaterial
+            });
+            particle.collisionFilterGroup = 1 | 2;
+            particle.collisionFilterMask = 1 | 2;
+
+            clothParticles2[x].push(particle);
+            world.addBody(particle);
+        }
+    }
+    // Constrains cloth 2 
+    for (let x = 0; x <= Nx; x++) {
+        for (let y = 0; y <= Ny; y++) {
+            if (x < Nx && y < Ny) {
+                connectParticles(clothParticles2, x, y, x, y + 1);
+                connectParticles(clothParticles2, x, y, x + 1, y);
+                connectParticles(clothParticles2, x, y, x + 1, y + 1);
+                if (y > 0) {
+                    connectParticles(clothParticles2, x, y, x + 1, y - 1);
+                }
+            } else if (x === Nx && y < Ny) {
+                connectParticles(clothParticles2, x, y, x, y + 1);
+            } else if (x < Nx && y === Ny) {
+                connectParticles(clothParticles2, x, y, x + 1, y);
+            }
+        }
+    }
+    // Initialize the vertices of cloth 2
+    const vertices2 = [];
+    for (let x = 0; x <= Nx; x++) {
+        for (let y = 0; y <= Ny; y++) {
+            vertices2.push(new THREE.Vector3());
+        }
+    }
+    clothGeometry2.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices2.length * 3), 3));
+
+    // LIGHTS
+    const light = new THREE.DirectionalLight(0xffffff, 4 * PI);
+    light.position.set(0, 15, 0);
+    light.target.position.set(0, 2, 0);
+    light.castShadow = true;
+    light.shadow.radius = 16;
+    light.shadow.camera.near = 2;
+    light.shadow.camera.far = 200;
+    light.shadow.bias = 0.0001;
+    light.shadow.mapSize.width = shadowMapWidth;
+    light.shadow.mapSize.height = shadowMapHeight;
+    light.decay = 0;
+    scene.add(light);
+
+    const lightD = new THREE.DirectionalLight(0xffffff, 10 * PI);
+    lightD.position.set(0, 2, 0);
+    lightD.target.position.set(0, 8, 0);
+    lightD.decay = 0
+    scene.add(lightD);
     const lightHelperD = new THREE.DirectionalLightHelper(lightD, 5);
-    // scene.add(lightHelperD);
-
-    const ambientLight = new THREE.AmbientLight(0xffffff)
-    scene.add(ambientLight)
-
-
 
     // NOISE
-    noise3D = NOISE.createNoise3D()
-    let t0 = Math.random() * 10
+    noise3D = NOISE.createNoise3D();
+    let t0 = Math.random() * 10;
 
-    // Flowfield per il vento
-    const flowFieldSize = 32 // Dimensione della griglia del flowfield
-    flowField = createFlowField(flowFieldSize, 0) // Inizializzazione del flowfield
-    function createFlowField(size, offsetSpeed) {
-        const flowField = []
-        const noiseFreq = 0.1 // Frequenza del rumore per il flowfield
+    // FLOWFIELD 
+    const flowFieldSize = 32;
+    flowField = createFlowField(flowFieldSize, 0, p.windStrength);
+    // flowField2 = createFlowField(flowFieldSize, 0, p.windStrength2);
+
+    function createFlowField(size, offsetSpeed, windStrength) {
+        const flowField = [];
+        const noiseFreq = 0.05;
 
         for (let y = 0; y < size; y++) {
-            const row = []
+            const row = [];
             for (let x = 0; x < size; x++) {
                 const noiseX = noise3D(x * noiseFreq, offsetSpeed, y * noiseFreq);
                 const noiseY = noise3D(x * noiseFreq, y * noiseFreq, offsetSpeed);
 
-                const windDirection = new THREE.Vector3(- mouse.x, - mouse.y, 0).normalize();
-                const windIntensity = Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
-                // const vector = windDirection.multiplyScalar(windIntensity * p.windStrength);
-                const vector = new THREE.Vector3(-mouse.x + noiseX, 0, -mouse.y + noiseY).normalize().multiplyScalar(p.windStrength + windIntensity * 2);
-
-                row.push(vector);
+                if (p.mouse) {
+                    const windDirection = new THREE.Vector3(-mouse.x, -mouse.y, 0).normalize();
+                    const windIntensity = Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
+                    const vector = new THREE.Vector3(-mouse.x + noiseX, mouse.y + noiseY, 0).normalize().multiplyScalar(windStrength + windIntensity * 2);
+                    row.push(vector);
+                } else {
+                    const vector = new THREE.Vector3(noiseX * .1, noiseY, 0).normalize().multiplyScalar(windStrength);
+                    row.push(vector);
+                }
             }
             flowField.push(row);
         }
@@ -349,17 +328,44 @@ export function sketch() {
     }
 
     // ANIMATE
-    const timeStep = 1 / 60
-    const stepsPerFrame = 2
-    let lastCallTime
+    const timeStep = 1 / 60;
+    const stepsPerFrame = 2;
+    let lastCallTime;
+
+    // Start simulation from a certain time
+    // Applica le forze del vento alle particelle del cloth durante l'inizializzazione
+    for (let i = 0; i < 50 + Math.floor(Math.random() * 100); i++) {
+        for (let x = 0; x <= Nx; x++) {
+            for (let y = 0; y <= Ny; y++) {
+                const particle = clothParticles[x][y];
+                const particle2 = clothParticles2[x][y];
+
+                let gridX = Math.floor((particle.position.x + cWidth / 2) / cWidth * flowFieldSize);
+                let gridY = Math.floor((particle.position.z + cHeight / 2) / cHeight * flowFieldSize);
+                // let gridX2 = Math.floor((particle2.position.x + cWidth / 2) / cWidth * flowFieldSize);
+                // let gridY2 = Math.floor((particle2.position.z + cHeight / 2) / cHeight * flowFieldSize);
+
+                gridX = Math.max(0, Math.min(flowFieldSize - 1, gridX));
+                gridY = Math.max(0, Math.min(flowFieldSize - 1, gridY));
+                // gridX2 = Math.max(0, Math.min(flowFieldSize - 1, gridX2));
+                // gridY2 = Math.max(0, Math.min(flowFieldSize - 1, gridY2));
+
+                const windForce = flowField[gridY][gridX].clone();
+                const windForce2 = flowField[gridX][gridY].clone();
+
+                particle.applyForce(windForce);
+                particle2.applyForce(windForce2);
+            }
+        }
+        world.step(timeStep);
+    }
 
     const animate = () => {
         if (showStats) stats.begin();
 
         // ANIMATION
         if (!paused) {
-
-            const t = performance.now() / 1000
+            const t = performance.now() / 1000;
 
             if (!lastCallTime) {
                 for (let i = 0; i < stepsPerFrame; i++) {
@@ -372,82 +378,98 @@ export function sketch() {
                     world.step(timeStep);
                 }
             }
-            lastCallTime = t
+            lastCallTime = t;
 
             // CANNON SIMULATION
 
             if (p.wind) {
-                const t1 = t * 1.0 // speed
+                const t1 = t * 1.0; //speed
                 // Aggiorna il flowfield
-                flowField = createFlowField(flowFieldSize, t1 * 0.1); // Regola la velocità di animazione del flowfield
+                flowField = createFlowField(flowFieldSize, t1 * 0.1, p.windStrength);
+                // flowField2 = createFlowField(flowFieldSize, t1 * 0.1, p.windStrength2);
 
                 for (let x = 0; x <= Nx; x++) {
                     for (let y = 0; y <= Ny; y++) {
                         const particle = clothParticles[x][y];
+                        const particle2 = clothParticles2[x][y];
 
                         // Ottieni il vettore del flusso dalla griglia del flowfield
-                        let gridX = Math.floor((particle.position.x + cWidth / 2) / cWidth * flowFieldSize)
-                        let gridY = Math.floor((particle.position.z + cHeight / 2) / cHeight * flowFieldSize)
+                        let gridX = Math.floor((particle.position.x + cWidth / 2) / cWidth * flowFieldSize);
+                        let gridY = Math.floor((particle.position.z + cHeight / 2) / cHeight * flowFieldSize);
+                        // let gridX2 = Math.floor((particle2.position.x + cWidth / 2) / cWidth * flowFieldSize);
+                        // let gridY2 = Math.floor((particle2.position.z + cHeight / 2) / cHeight * flowFieldSize);
 
                         // Confinare gridX e gridY nei limiti dell'array flowField
-                        gridX = Math.max(0, Math.min(flowFieldSize - 1, gridX))
-                        gridY = Math.max(0, Math.min(flowFieldSize - 1, gridY))
-                        const windForce = flowField[gridY][gridX].clone()
+                        gridX = Math.max(0, Math.min(flowFieldSize - 1, gridX));
+                        gridY = Math.max(0, Math.min(flowFieldSize - 1, gridY));
+                        // gridX2 = Math.max(0, Math.min(flowFieldSize - 1, gridX2));
+                        // gridY2 = Math.max(0, Math.min(flowFieldSize - 1, gridY2));
+                        const windForce = flowField[gridY][gridX].clone();
+                        const windForce2 = flowField[gridX][gridY].clone();
 
                         particle.applyForce(windForce);
+                        particle2.applyForce(windForce2);
                     }
                 }
             }
 
             const positions = cloth.geometry.attributes.position.array;
+            const positions2 = cloth2.geometry.attributes.position.array;
             for (let x = 0; x <= Nx; x++) {
                 for (let y = 0; y <= Ny; y++) {
-                    const particle = clothParticles[x][y]
-                    const index = (x * (Nx + 1) + y) * 3
-                    positions[index] = particle.position.x
-                    positions[index + 1] = particle.position.y
-                    positions[index + 2] = particle.position.z
+                    const particle = clothParticles[x][y];
+                    const particle2 = clothParticles2[x][y];
+                    const index = (x * (Nx + 1) + y) * 3;
+                    const index2 = (x * (Nx + 1) + y) * 3;
+                    positions[index] = particle.position.x;
+                    positions[index + 1] = particle.position.y;
+                    positions[index + 2] = particle.position.z;
+                    positions2[index2] = particle2.position.x;
+                    positions2[index2 + 1] = particle2.position.y;
+                    positions2[index2 + 2] = particle2.position.z;
                 }
             }
-            cloth.geometry.attributes.position.needsUpdate = true
+            cloth.geometry.attributes.position.needsUpdate = true;
+            cloth2.geometry.attributes.position.needsUpdate = true;
         }
 
-        controls.update()
-        renderer.render(scene, camera)
-        if (showStats) stats.end()
+        controls.update();
+        renderer.render(scene, camera);
+        if (showStats) stats.end();
 
-        animation = requestAnimationFrame(animate)
+        animation = requestAnimationFrame(animate);
     };
-    animate()
+    animate();
 }
 
 export function dispose() {
-    cancelAnimationFrame(animation)
-    controls?.dispose()
-    clothMaterial?.dispose()
-    mirrorMate?.dispose()
-    mirrorMate2?.dispose()
-    groundGeom?.dispose()
-    groundMate?.dispose()
-
-    // Dispose dei reflectors
-    mirrorBack?.dispose();
-    mirrorBack2?.dispose();
-    mirrorBack3?.dispose();
-
-    // Dispose delle geometrie dei reflectors
-    reflectorBackGeom?.dispose();
-    reflectorBackGeom2?.dispose();
-    reflectorBackGeom3?.dispose();
-
-    // Rimuovi i reflectors dalla scena
-    scene?.remove(mirrorBack);
-    scene?.remove(mirrorBack2);
-    scene?.remove(mirrorBack3);
-
-    world = null
-    noise3D = null
-    flowField = null
-    window?.removeEventListener('resize', onWindowResize)
-    window?.removeEventListener('mousemove', onMouseMove)
+    cancelAnimationFrame(animation);
+    scene.remove(cloth);
+    scene.remove(cloth2);
+    clothParticles.forEach((row) => {
+        row.forEach((particle) => {
+            world.removeBody(particle);
+        });
+    });
+    clothParticles2.forEach((row) => {
+        row.forEach((particle) => {
+            world.removeBody(particle);
+        });
+    });
+    clothParticles = null;
+    clothParticles2 = null;
+    constraints.forEach((constraint) => {
+        world.removeConstraint(constraint);
+    });
+    world.removeBody(groundBody);
+    controls?.dispose();
+    clothMaterial?.dispose();
+    mirrorMate?.dispose();
+    groundGeom?.dispose();
+    groundMate?.dispose();
+    world = null;
+    noise3D = null;
+    flowField = null;
+    window?.removeEventListener('resize', onWindowResize);
+    window?.removeEventListener('mousemove', onMouseMove);
 }
