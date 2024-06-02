@@ -35,6 +35,7 @@ global.THREE = THREE
 global.GUI = GUI
 global.CANNON = CANNON
 global.NOISE = NOISE
+global.PI = Math.PI
 
 global.showStats = true // xxx
 
@@ -325,6 +326,7 @@ const loadCubeTexture = (name, path, format) => {
 	global.cubeTextures.push({
 		name: name,
 		texture: cubeTextureLoader.load(urls, (cube) => {
+			cube.colorSpace = THREE.SRGBColorSpace
 			// console.log('loadedCubeTexture: ' + cube)
 		})
 	})
@@ -336,6 +338,7 @@ const loadTexture = (name, path, format) => {
 	global.textures.push({
 		name: name,
 		texture: textureLoader.load(url, (texture) => {
+			texture.colorSpace = THREE.SRGBColorSpace
 			// console.log('loadedTexture: ' + texture)
 		})
 	})
@@ -392,7 +395,7 @@ const randomSketch = () => {
 	*/
 	const sets = [0, 1, 2, 3, 4] // available sets
 	const setsWeights = [0.20, 0.20, 0.20, 0.20, 0.20] // available sets: probability weight
-	const sketches = [1, 1, 1, 1, 8] // no. of available sketches for each set
+	const sketches = [1, 1, 2, 3, 4] // no. of available sketches for each set
 	// playSet
 	// pure random
 	// global.playSet = Math.round(Math.random() * (sets.length - 1));

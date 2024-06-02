@@ -1,8 +1,8 @@
-// FOREST 
+// FOREST + AUDIO (DRAFT)
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let scene, camera, animation, onWindowResize, controls
+let scene, animation, onWindowResize, controls
 let groundGeom, lanceGeometry
 const lances = []
 let groundMate, lanceMate, fireFlyMate
@@ -11,6 +11,7 @@ let light, lightD, ambientLight
 let world
 let noise3D
 let flowField
+let camera
 
 export function sketch() {
 
@@ -26,6 +27,9 @@ export function sketch() {
         spacing: .2 + Math.random() * .7,
         spacingVariability: Math.random(),
         lanceMass: 1,
+        // unit transformation
+        mic: true,
+        micSensitivity: .1,
         // view
         lookAtCenter: new THREE.Vector3(0, 0, 0),
         cameraPosition: new THREE.Vector3(0, -0.9, - 3 - Math.random() * 2),
@@ -63,7 +67,7 @@ export function sketch() {
     let paused = false;
 
     // CAMERA
-    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
     camera.position.copy(p.cameraPosition)
     camera.lookAt(p.lookAtCenter)
 
@@ -91,9 +95,8 @@ export function sketch() {
         roughness: 1,
         metalness: 0,
         fog: true,
-        // transparent: true,
-        // opacity: .5
-
+        opacity: .5,
+        transparent: true,
     })
     fireFlyMate = new THREE.MeshStandardMaterial({
         color: 0xFFC702,
@@ -158,7 +161,8 @@ export function sketch() {
     const spacingVariability = p.spacingVariability // .5;
     const baseDiam = p.baseDiam
     const topDiam = p.topDiam
-    lanceGeometry = new THREE.CylinderGeometry(topDiam, baseDiam, lanceLength, 16);
+    const lanceGeometry = new THREE.CylinderGeometry(topDiam, baseDiam, lanceLength, 16);
+    const lances = [];
 
     for (let i = 0; i < numRows; i++) {
         for (let j = 0; j < numCols; j++) {
@@ -198,13 +202,25 @@ export function sketch() {
             )
             world.addConstraint(constraint);
 
-            lances.push({ mesh: lance, body: lanceBody });
+            lances.push({ mesh: lance, body: lanceBody, anchor: anchorBody });
         }
     }
 
     // Funzione per aggiornare la posizione delle lance
     function updateLances() {
         for (const lance of lances) {
+            const pointVolScale = MIC.getHighsVol(.3, 1)
+            // const pointVol = MIC.mapSound(i / 3, numParticles, p.pointGroundY, p.pointMaxY)
+            lance.mesh.scale.y = pointVolScale;
+            lance.mesh.position.y = p.floor + (pointVolScale) / 2;
+            lance.mesh.updateMatrix();
+
+            lance.body.shapes[0].height = lanceLength * pointVolScale;
+            lance.body.position.y = p.floor + lanceLength * pointVolScale / 2;
+            lance.body.shapes[0].updateBoundingSphereRadius();
+
+            lance.anchor.position.y = p.floor;
+
             lance.mesh.position.copy(lance.body.position);
             lance.mesh.quaternion.copy(lance.body.quaternion);
         }
@@ -213,8 +229,8 @@ export function sketch() {
     // FIREFLIES
     fireFlyGeom = new THREE.SphereGeometry(.005, 10, 2)
     const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate)
-    fireFlyLight = new THREE.PointLight(0xFFC702, 3, 2);
-    fireFlyLight.castShadow = true;
+    fireFlyLight = new THREE.PointLight(0xFFC702, 3, 2); // Luce direzionale con intensità 2
+    fireFlyLight.castShadow = true; // Abilita la creazione di ombre
     scene.add(fireFlyLight);
     scene.add(fireFly)
 
@@ -237,13 +253,13 @@ export function sketch() {
     const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
-    lightD = new THREE.DirectionalLight(0xffffff, 10 * PI)
+    lightD = new THREE.DirectionalLight(0xffffff, 10)
     lightD.position.set(-4, 0, -5)
     lightD.target.position.set(0, 4, 0)
     lightD.decay = 0
     // scene.add(lightD)
 
-    // ambientLight = new THREE.AmbientLight(0xffffff)
+    // const ambientLight = new THREE.AmbientLight(0xffffff)
     // scene.add(ambientLight)
 
     // NOISE
@@ -356,7 +372,6 @@ export function dispose() {
     world.constraints.forEach((constraint) => {
         world.removeConstraint(constraint);
     });
-    world = null
     noise3D = null
     flowField = null
     fireFlyGeom?.dispose();
@@ -367,5 +382,4 @@ export function dispose() {
     ambientLight?.dispose();
     camera = null
     window?.removeEventListener('resize', onWindowResize)
-    // window?.removeEventListener('mousemove', onMouseMove)
 }
