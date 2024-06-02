@@ -1,6 +1,5 @@
-//PROVA DI VETTORI SFERE
+// TANGO
 
-import { createNoise3D } from 'simplex-noise'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
 let scene, camera, animation

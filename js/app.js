@@ -395,7 +395,7 @@ const randomSketch = () => {
 	*/
 	const sets = [0, 1, 2, 3, 4] // available sets
 	const setsWeights = [0.20, 0.20, 0.20, 0.20, 0.20] // available sets: probability weight
-	const sketches = [1, 1, 1, 1, 8] // no. of available sketches for each set
+	const sketches = [1, 1, 2, 3, 4] // no. of available sketches for each set
 	// playSet
 	// pure random
 	// global.playSet = Math.round(Math.random() * (sets.length - 1));
