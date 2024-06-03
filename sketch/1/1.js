@@ -11,6 +11,7 @@ let light, lightD, ambientLight
 let world
 let noise3D
 let flowField
+let arrayfireflies = []
 
 export function sketch() {
 
@@ -18,11 +19,11 @@ export function sketch() {
         // lights
         night: false,
         // lance
-        lanceLength: 1 + Math.random() * 4,
+        lanceLength: 1 + Math.random() * 1,
         baseDiam: .04,
         topDiam: 0,
-        numRows: 1 + Math.floor(Math.random() * 10),
-        numCols: 1 + Math.floor(Math.random() * 10),
+        numRows: 1 + Math.floor(Math.random() * 2),
+        numCols: 1 + Math.floor(Math.random() * 2),
         spacing: .2 + Math.random() * .7,
         spacingVariability: Math.random(),
         lanceMass: 1,
@@ -30,9 +31,10 @@ export function sketch() {
         lookAtCenter: new THREE.Vector3(0, 0, 0),
         cameraPosition: new THREE.Vector3(0, -0.9, - 3 - Math.random() * 2),
         autoRotate: true,
-        autoRotateSpeed: -.2 + Math.random() * .4,
+        autoRotateSpeed: -.4 + Math.random() * .8,
         camera: 35,
         // fireflies
+        // numfireflies: 10, // xxx
         fireFlySpeed: .1,
         // world
         background: new THREE.Color(0x000000),
@@ -43,7 +45,7 @@ export function sketch() {
     };
 
     //debug random night/day xxx
-    if (Math.random() > .5) p.night = true
+    // if (Math.random() > .5) p.night = true
 
     let lanceColor
     let groundColor
@@ -141,7 +143,7 @@ export function sketch() {
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = false;
     controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
+    controls.dampingFactor = 0.005;
     controls.minDistance = 2;
     controls.maxDistance = 6;
     controls.maxPolarAngle = Math.PI / 2 + 0.15;
@@ -160,47 +162,57 @@ export function sketch() {
     const topDiam = p.topDiam
     lanceGeometry = new THREE.CylinderGeometry(topDiam, baseDiam, lanceLength, 16);
 
-    for (let i = 0; i < numRows; i++) {
-        for (let j = 0; j < numCols; j++) {
-            const lance = new THREE.Mesh(lanceGeometry, lanceMate);
-            lance.castShadow = true;
-            lance.position.set(
-                (j - (numCols - 1) / 2) * spacing - (Math.random() * spacing / 2 * spacingVariability),
-                p.floor,
-                (i - (numRows - 1) / 2) * spacing + (Math.random() * spacing / 2 * spacingVariability)
-            );
-            scene.add(lance);
+    //BLOCKS -- offset = BLOCKS_SPACE
+    // const blocks = [
+    //     { numRows, numCols, spacing, spacingVariability, offset: new THREE.Vector3(-0.9, 0, 0) },
+    //     { numRows, numCols, spacing, spacingVariability, offset: new THREE.Vector3(0.9, 0, 0) },
+    // ];
 
-            const lanceShape = new CANNON.Cylinder(0.01, 0.05, lanceLength, 8);
-            const lanceBody = new CANNON.Body({ mass: p.lanceMass });
-            lanceBody.addShape(lanceShape);
-            lanceBody.position.copy(lance.position);
-            world.addBody(lanceBody);
 
-            // Crea un corpo fisico statico per l'ancoraggio al terreno
-            const anchorBody = new CANNON.Body({ mass: 0 });
-            anchorBody.position.set(lance.position.x, p.floor, lance.position.z);
-            world.addBody(anchorBody);
+    // for (const block of blocks) {
+    //     const { numRows, numCols, spacing, spacingVariability, offset } = block;
+        for (let i = 0; i < numRows; i++) {
+            for (let j = 0; j < numCols; j++) {
+                const lance = new THREE.Mesh(lanceGeometry, lanceMate);
+                lance.castShadow = true;
+                lance.position.set(
+                    (j - (numCols - 1) / 2) * spacing - (Math.random() * spacing / 2 * spacingVariability),
+                    p.floor,
+                    (i - (numRows - 1) / 2) * spacing + (Math.random() * spacing / 2 * spacingVariability)
+                );
+                scene.add(lance);
 
-            // Aggiungi un vincolo a cerniera tra la base della lancia e l'ancoraggio al terreno
-            // const constraint = new CANNON.HingeConstraint(lanceBody, anchorBody, {
-            //     pivotA: new CANNON.Vec3(0, - lanceLength / 2, 0),
-            //     pivotB: new CANNON.Vec3(0, 0, 0),
-            //     axisA: new CANNON.Vec3(1, 0, 0),
-            //     axisB: new CANNON.Vec3(0, 0, 1),
-            // });
-            // Aggiungi il vincolo tra il cilindro e il corpo fisso
-            const constraint = new CANNON.PointToPointConstraint(
-                lanceBody,
-                new CANNON.Vec3(0, - lanceLength / 2, 0),
-                anchorBody,
-                new CANNON.Vec3(0, 0, 0),
-            )
-            world.addConstraint(constraint);
+                const lanceShape = new CANNON.Cylinder(0.01, 0.05, lanceLength, 8);
+                const lanceBody = new CANNON.Body({ mass: p.lanceMass });
+                lanceBody.addShape(lanceShape);
+                lanceBody.position.copy(lance.position);
+                world.addBody(lanceBody);
 
-            lances.push({ mesh: lance, body: lanceBody });
+                // Crea un corpo fisico statico per l'ancoraggio al terreno
+                const anchorBody = new CANNON.Body({ mass: 0 });
+                anchorBody.position.set(lance.position.x, p.floor, lance.position.z);
+                world.addBody(anchorBody);
+
+                // Aggiungi un vincolo a cerniera tra la base della lancia e l'ancoraggio al terreno
+                // const constraint = new CANNON.HingeConstraint(lanceBody, anchorBody, {
+                //     pivotA: new CANNON.Vec3(0, - lanceLength / 2, 0),
+                //     pivotB: new CANNON.Vec3(0, 0, 0),
+                //     axisA: new CANNON.Vec3(1, 0, 0),
+                //     axisB: new CANNON.Vec3(0, 0, 1),
+                // });
+                // Aggiungi il vincolo tra il cilindro e il corpo fisso
+                const constraint = new CANNON.PointToPointConstraint(
+                    lanceBody,
+                    new CANNON.Vec3(0, - lanceLength / 2, 0),
+                    anchorBody,
+                    new CANNON.Vec3(0, 0, 0),
+                )
+                world.addConstraint(constraint);
+
+                lances.push({ mesh: lance, body: lanceBody });
+            }
         }
-    }
+    // }
 
     // Funzione per aggiornare la posizione delle lance
     function updateLances() {
@@ -218,6 +230,18 @@ export function sketch() {
     scene.add(fireFlyLight);
     scene.add(fireFly)
 
+    // FIREFLIES ARRAY
+    // arrayfireflies = []
+
+    // for (let i = 0; i < p.numfireflies; i++) {
+    //     const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate);
+    //     fireFlyLight = new THREE.PointLight(0xFFC702, 3, 1);
+    //     fireFlyLight.castShadow = true; // Abilita la creazione di ombre
+    //     arrayfireflies.push(fireFly);
+    //     fireFly.add(fireFlyLight);
+    //     scene.add(fireFly)
+    // }
+
     // LIGHTS
     let lightIntensity
     if (p.night) lightIntensity = .5 * PI
@@ -226,7 +250,7 @@ export function sketch() {
     light.position.set(10, 20, -20)
     light.target.position.set(0, 0, 0)
     light.castShadow = true
-    light.shadow.radius = 2
+    light.shadow.radius = 4
     light.shadow.camera.near = 2
     light.shadow.camera.far = 200
     light.shadow.bias = 0.0001
@@ -329,6 +353,15 @@ export function sketch() {
             fireFly.position.y = -.4 + noise3D(t2 + 4, 0, 0) * .8
             fireFly.position.z = -1 + noise3D(0, 0, t2 + 8) * 2
             fireFlyLight.position.copy(fireFly.position)
+
+
+            // xxx
+            // for (let i = 0; i < p.numfireflies; i++) {
+            //     arrayfireflies[i].position.x = -1 + noise3D(0, t2 + i, 0) * 2;
+            //     arrayfireflies[i].position.y = -.4 + noise3D(t2 + i + 4, 0, 0) * .8;
+            //     arrayfireflies[i].position.z = -1 + noise3D(0, 0, t2 - i + 8) * 2;
+            //     arrayfireflies[i].position.copy(arrayfireflies[i].position);
+            // }
         }
 
         controls.update()
@@ -362,6 +395,9 @@ export function dispose() {
     fireFlyGeom?.dispose();
     fireFlyMate?.dispose();
     fireFlyLight?.dispose();
+    // arrayfireflies.forEach((f) => {
+
+    // }
     light?.dispose();
     lightD?.dispose();
     ambientLight?.dispose();

@@ -19,19 +19,19 @@ export function sketch() {
         // lights
         night: false,
         // lance
-        lanceLength: 1 + Math.random() * 3,
+        lanceLength: 1 + Math.random() * 4,
         baseDiam: .04,
         topDiam: 0,
-        numRows: 2 + Math.floor(Math.random() * 2),
-        numCols: 2 + Math.floor(Math.random() * 2),
-        spacing: .4 + Math.random() * 1,
+        numRows: 2 + Math.floor(Math.random() * 3),
+        numCols: 2 + Math.floor(Math.random() * 20),
+        spacing: .2 + Math.random() * .7,
         spacingVariability: Math.random(),
         lanceMass: 1,
         // view
         lookAtCenter: new THREE.Vector3(0, 0, 0),
         cameraPosition: new THREE.Vector3(0, 5, 0),
         autoRotate: true,
-        autoRotateSpeed: -1 + Math.random() * 1,
+        autoRotateSpeed: -.2 + Math.random() * .4,
         camera: 35,
         // fireflies
         // numfireflies: 10, // xxx
@@ -145,7 +145,7 @@ export function sketch() {
     controls.enableDamping = true;
     controls.dampingFactor = 0.005;
     controls.minDistance = 2;
-    controls.maxDistance = 10;
+    controls.maxDistance = 6;
     controls.maxPolarAngle = Math.PI / 2 + 0.15;
     controls.minPolarAngle = -Math.PI;
     controls.autoRotate = p.autoRotate;

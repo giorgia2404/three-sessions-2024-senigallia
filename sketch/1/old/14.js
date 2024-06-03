@@ -164,8 +164,9 @@ export function sketch() {
         ];
 
 
-    for (const block of blocks) {
-        const { numRows, numCols, spacing, spacingVariability, offset } = block;
+    // xxx
+    // for (const block of blocks) {
+    //     const { numRows, numCols, spacing, spacingVariability, offset } = block;
         for (let i = 0; i < numRows; i++) {
             for (let j = 0; j < numCols; j++) {
                 const lance = new THREE.Mesh(lanceGeometry, lanceMate);
@@ -207,7 +208,7 @@ export function sketch() {
                 lances.push({ mesh: lance, body: lanceBody });
             }
         }
-    }
+    // }
     
     // Funzione per aggiornare la posizione delle lance
     function updateLances() {
