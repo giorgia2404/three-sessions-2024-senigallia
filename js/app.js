@@ -37,7 +37,7 @@ global.CANNON = CANNON
 global.NOISE = NOISE
 global.PI = Math.PI
 
-global.showStats = true // xxx
+global.showStats = false // xxx
 
 let myThree
 const artFolder = "sketch"
