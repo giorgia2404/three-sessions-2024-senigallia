@@ -31,11 +31,11 @@ export function sketch() {
     // kind: 'special' < other actions to play randomly with parameters (repetitions, loopInOut, ...)
 
     // idles
-    {
-      name: 'idle',
-      color: 2,
-      kind: 'idle'
-    },
+    // {
+    //   name: 'idle',
+    //   color: 2,
+    //   kind: 'idle'
+    // },
     {
       name: 'run',
       color: 2,
@@ -228,8 +228,8 @@ export function sketch() {
   // PARAMETERS
   const p = {
     // human
-    idleMinDuration: 2,
-    idleMaxDuration: 4,
+    idleMinDuration: 6,
+    idleMaxDuration: 10,
     shadowMode: true,
     // colors
     availableColorsHighlights: [
@@ -401,10 +401,10 @@ export function sketch() {
         // console.log(clip.name)
       }
       // console.log(actionsNames)
-      actions["idle"].play()
-      activeAction = actions["idle"];
-      fadeToAction("idle", 0.5);
-      changeSceneColor(actionsToPlay[0]); // idle
+      actions["Walk"].play()
+      activeAction = actions["Walk"];
+      fadeToAction("Walk", 0.5);
+      changeSceneColor(actionsToPlay[2]); // idle
       setTimeout(playDirector, 0);
       // activeAction.play();
 
