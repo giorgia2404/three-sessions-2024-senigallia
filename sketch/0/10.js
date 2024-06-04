@@ -1,301 +1,322 @@
-//steadyCam
+// TANGO
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
+import { clearcoatRoughness } from 'three/examples/jsm/nodes/Nodes.js'
+import { ior, thickness } from 'three/examples/jsm/nodes/core/PropertyNode.js'
 
-import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
-import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
-
-let scene
-let groundMate, mirrorMate
-let groundGeom, stepSideGeom, reflectorBackGeom
-let mirrorBack // reflector
-let animation
-let onWindowResize
+let scene, camera, animation
+let light1, light2
+let onWindowResize, controls, onPostStep
+let world
 let noise3D
-// let gui
-let controls
+let directorTimeOut
+const sphereMeshes = []
+const sphereBodies = []
+
 
 export function sketch() {
-    // console.log("Sketch launched")
-
     // PARAMETERS
     const p = {
-        // objects
-        lightSpeed: .2,
-        animate: false,
-        // ...
-        // view
-        lookAtCenter: new THREE.Vector3(0, 1, 0),
-        cameraPosition: new THREE.Vector3(- 3 + Math.random() * 6, -0.5, -5),
-        autoRotate: false,
-        autoRotateSpeed: -1,
+        // spheres
+        numSpheres: 100,
+        minSphereRadius: .5,
+        maxSphereRadius: 2,
+        // camera
+        lookAtCenter: new THREE.Vector3(0, 0, 0),
+        cameraPosition: new THREE.Vector3(25, -25 + Math.random() * 10, 10 + Math.random() * 10),
+        autoRotate: true,
+        autoRotateSpeed: -10 + Math.random() * 20,
         camera: 35,
-        // ...
-        // world
-        background: new THREE.Color(0x00a28a),
-        floor: -0.5,
-        // ...
     }
 
-    // other parameters
-    let near = 0.2, far = 200
-    let shadowMapWidth = 2048, shadowMapHeight = 2048
-    let paused = false
-
     // CAMERA
-    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    let near = 0.2, far = 1000
+    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth /
+        window.innerHeight, near, far)
     camera.position.copy(p.cameraPosition)
     camera.lookAt(p.lookAtCenter)
 
     // WINDOW RESIZE
-    const onWindowResize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight
-        camera.updateProjectionMatrix()
-        renderer.setSize(window.innerWidth, window.innerHeight)
-    }
-    window.addEventListener('resize', onWindowResize)
+    onWindowResize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+    window.addEventListener('resize', onWindowResize);
 
     // CONTROLS
     controls = new OrbitControls(camera, renderer.domElement)
     controls.enablePan = false
     controls.enableDamping = true
-    controls.dampingFactor = 0.05
-    controls.minDistance = 5
-    controls.maxDistance = 15
-    controls.maxPolarAngle = Math.PI / 2
-    controls.minPolarAngle = Math.PI / 2 - 0.8
-    controls.maxAzimuthAngle = - Math.PI / 2
-    controls.minAzimuthAngle = Math.PI / 2
+    controls.dampingFactor = 0.01
+    // controls.maxPolarAngle = Math.PI / 2 + 0.2
+    // controls.minPolarAngle = Math.PI / 2 - 0.4
     controls.autoRotate = p.autoRotate
     controls.autoRotateSpeed = p.autoRotateSpeed
     controls.target = p.lookAtCenter
+    controls.update()
 
     // SCENE
     scene = new THREE.Scene()
-    scene.background = p.background
-    scene.fog = new THREE.Fog(scene.background, 3, 30)
-    // materials
-    mirrorMate = new THREE.MeshPhongMaterial({
-        color: 0x444444,
-        envMap: cubeTextures[0].texture,
-        side: THREE.DoubleSide,
-        combine: THREE.addOperation,
-        reflectivity: 1,
-        // specular: 0x999999,
-        fog: true
-    })
-    groundMate = new THREE.MeshStandardMaterial({
-        color: 0x000000,
-        roughness: 1,
-        metalness: 0,
-        fog: true,
-    })
+    scene.background = new THREE.Color(0x000000)
+    scene.fog = new THREE.Fog(scene.background, 100, 1000)
 
-    // REFLECTOR
-    let mirrorW = .7
-    let mirrorH = 3
-    mirrorBack = new Reflector(
-        new THREE.PlaneGeometry(mirrorW, mirrorH),
-        {
-            clipBias: 0.003,
-            color: new THREE.Color(0x7f7f7f),
-            textureWidth: window.innerWidth * window.devicePixelRatio,
-            textureHeight: window.innerHeight * window.devicePixelRatio,
-        })
-    mirrorBack.position.y = p.floor + mirrorH / 2
-    mirrorBack.position.z = 3
-    mirrorBack.rotation.y = Math.PI
-    scene.add(mirrorBack)
-    // let's make the mirror backside to do a shadow
-    reflectorBackGeom = new THREE.PlaneGeometry(mirrorW, mirrorH)
-    let reflectorBack = new THREE.Mesh(reflectorBackGeom, mirrorMate)
-    reflectorBack.position.y = p.floor + mirrorW / 2
-    reflectorBack.position.z = 3.05
-    reflectorBack.rotation.y = Math.PI
-    reflectorBack.castShadow = true
-    scene.add(reflectorBack)
-    // let's make some light below the mirror...
-    RectAreaLightUniformsLib.init();
-    let rectLightIntensity = 100
-    const rectLight = new THREE.RectAreaLight(0xffffff, rectLightIntensity, mirrorW, mirrorH)
-    rectLight.position.set(0, p.floor + mirrorH / 2, 3.025)
-    scene.add(rectLight)
-    const rectLightHelper = new RectAreaLightHelper(rectLight)
-    rectLight.add(rectLightHelper)
-
-    // GEOMETRIES
-    // let's make a staircase mirror    
-    let stepW = 1.2
-    let stepH = 0.4
-    stepSideGeom = new THREE.PlaneGeometry(stepW, stepH)
-
-
-    let minSteps = 5
-    let maxStepsDelta = 10
-    const ramps = []
-    for (let r = 0; r < 3; r++) {
-        const steps = new THREE.Group
-        const rampSteps = minSteps + Math.random() * maxStepsDelta
-        for (let s = 0; s < rampSteps; s++) {
-            const stepV = new THREE.Mesh(stepSideGeom, mirrorMate)
-            const stepH = new THREE.Mesh(stepSideGeom, mirrorMate)
-            // front side
-            stepV.position.y = p.floor + 0.2 + s * .4
-            stepV.position.z = s * .4
-            // top side
-            stepH.rotation.x = Math.PI / 2
-            stepH.position.y = p.floor + .4 + s * .4
-            stepH.position.z = .2 + s * .4
-            // shadows
-            stepH.castShadow = true
-            stepV.castShadow = true
-            // add to rampgroup
-            steps.add(stepH)
-            steps.add(stepV)
-        }
-        // find an orientation for the ramp
-        let rampOrientation = Math.floor(Math.random() * 4)
-        steps.rotation.y = Math.PI / 2 * rampOrientation
-        steps.position.x = - 3 + r * 3
-        ramps.push(steps)
-        scene.add(steps)
-    }
-    // let's make a ground
-    groundGeom = new THREE.PlaneGeometry(20, 20)
-    let ground = new THREE.Mesh(groundGeom, groundMate)
-    ground.position.set(0, p.floor, 0)
-    ground.rotation.x = - Math.PI / 2
-    ground.scale.set(100, 100, 100)
-    ground.castShadow = false
-    ground.receiveShadow = true
-    scene.add(ground)
-
-    const light = new THREE.DirectionalLight(0xffffff, 10)
-    light.position.set(0, 2, -5)
-    // light.target = cube
+    // LIGHT
+    const light = new THREE.PointLight(0xffffff, 5 * PI)
+    light.position.set(-10, 10, 10)
     light.castShadow = true
-    light.shadow.radius = 8
-    light.shadow.camera.near = 2
-    light.shadow.camera.far = 200
-    light.shadow.bias = 0.0001
-    light.shadow.mapSize.width = shadowMapWidth
-    light.shadow.mapSize.height = shadowMapHeight
+    light.shadow.mapSize.width = 1024
+    light.shadow.mapSize.height = 1024
+    light.shadow.camera.near = 0.5
+    light.shadow.camera.far = 20
+    light.decay = 0
     scene.add(light)
-    // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
-    // scene.add(lightHelper);
 
-    const lightD = new THREE.DirectionalLight(0xffffff, 1)
-    light.position.set(0, 3, -3)
-    light.target.position.set(0, 0, 0)
-    scene.add(lightD)
-    // const pointLight = new THREE.PointLight(0xffffff, 2)
-    // pointLight.position.set(20, 20, 20)
-    // scene.add(pointLight)
-    // const pointLight2 = new THREE.PointLight(0xffffff, .1)
-    // pointLight2.position.set(-30, 20, -20)
-    // scene.add(pointLight2)
-    // const ambientLight = new THREE.AmbientLight(0xffffff)
-    // scene.add(ambientLight)
+    light1 = new THREE.SpotLight(0xE33117, 5 * PI)
+    light1.position.set(10, 5, 5)
+    // light1.angle = Math.PI / 4
+    // light1.penumbra = 0.5
+    light1.castShadow = true
+    light1.shadow.mapSize.width = 1024
+    light1.shadow.mapSize.height = 1024
+    light1.shadow.camera.near = 0.5
+    light1.shadow.camera.far = 100
+    light1.decay = 0
+    scene.add(light1)
 
-    // GUI
-    // gui = new GUI.GUI()
-    // const nameFolder = gui.addFolder('Name of the folder')
-    // nameFolder.add(cube.rotation, 'x', 0, Math.PI * 2)
-    // nameFolder.open()
-    // ...
+    light2 = new THREE.SpotLight(0xE33117, 3 * PI)
+    light2.position.set(-5, 5, 5)
+    // light2.angle = Math.PI / 4
+    // light2.penumbra = 0.5
+    light2.castShadow = true
+    light2.shadow.mapSize.width = 1024
+    light2.shadow.mapSize.height = 1024
+    light2.shadow.camera.near = 0.5
+    light2.shadow.camera.far = 100
+    light2.decay = 0
+    scene.add(light2)
 
+    //CANNON WORD
+    world = new CANNON.World()
+    world.gravity.set(0, -1, 0) // setting minimal gravity otherwise you lose friction calculations
 
-    // valori di partenza
-   /* const steadycamFlowSpeed = .02; // Adjust this value to change the speed of the steadycam flow
-    const steadycamFlowAmplitude = 0.01; // Adjust this value to change the amplitude of the steadycam flow
-    let steadycamFlowTime = 0;
-    function clamp(value, min, max) {
-        return Math.min(Math.max(value, min), max);
+    //MATERIAL
+    //material = new THREE.MeshPhongMaterial({ 
+    // color: 0x3300ff, specular:
+    // 0x555555, shininess: 30
+    // })
+    // material = new THREE.MeshStandardMaterial({
+    // color: 0xE33117,
+    // emissive: 0xE33117,
+    // metalness: 0.7,
+    // roughness: 0.2
+    // })
+
+    // material = new THREE.MeshStandardMaterial({
+    // envMap: cubeTextures[0].texture,
+    // color: 0xE33117,
+    // emissive: 0xE33117,
+    // metalness: 0.7,
+    // roughness: 0.2,
+    // transparent: true, // Abilita la trasparenza
+    // opacity: 0.8 // Imposta il livello di trasparenza (0.5 è un esempio, puoi modificarlo come preferisci)
+    // });
+
+    const material = new THREE.MeshPhysicalMaterial({
+        envMap: cubeTextures[0].texture,
+        color: 0xffffff,
+        metalness: 0,
+        roughness: .1,
+        transmission: 1,
+        thickness: 1,
+        flatShading: true,
+        specultarIntensity: 1,
+        specularColor: 0xffffff,
+        ior: 1.5,
+    });
+
+    const centralMate = new THREE.MeshPhysicalMaterial({
+        envMap: cubeTextures[1].texture,
+        color: 0xE33117,
+        // emissive: 0xE33117,
+        clearcoatRoughness: .5,
+        metalness: .9,
+        roughness: 0.1,
+        ior: 1.5,
+        thickness: .4,
+        transmission: 1,
+        transparent: true, 
+        opacity: .9, 
+    });
+
+    const sphereCenterRadius = 5
+    const sphereCenterGeom = new THREE.SphereGeometry(sphereCenterRadius, 48, 48)
+    const sphereCenter = new THREE.Mesh(sphereCenterGeom, centralMate)
+    sphereCenter.position.x = 0
+    sphereCenter.position.y = 0
+    sphereCenter.position.z = 0
+    sphereCenter.castShadow = true
+    sphereCenter.receiveShadow = true
+    scene.add(sphereCenter)
+    const sphereCenterShape = new CANNON.Sphere(sphereCenterRadius, 48, 48)
+    const sphereCenterBody = new CANNON.Body({ mass: 0 })
+    sphereCenterBody.addShape(sphereCenterShape)
+    sphereCenterBody.position.x = 0
+    sphereCenterBody.position.y = 0
+    sphereCenterBody.position.z = 0
+
+    // Add random angular velocity
+    const randomAngularVelocity = new CANNON.Vec3(
+        Math.random() * 2 - 1,
+        Math.random() * 2 - 1,
+        Math.random() * 2 - 1
+    )
+    sphereCenterBody.angularVelocity.set(randomAngularVelocity.x,
+        randomAngularVelocity.y, randomAngularVelocity.z)
+
+    // Set angular damping
+    sphereCenterBody.angularDamping = 0.1
+
+    world.addBody(sphereCenterBody)
+
+    for (let s = 0; s < p.numSpheres; s++) {
+        const sphereRadius = p.minSphereRadius + Math.random() *
+            (p.maxSphereRadius - p.minSphereRadius)
+
+        const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 8, 8)
+        sphereMeshes.push(new THREE.Mesh(sphereGeometry, material))
+        sphereMeshes[s].position.x = -50 + Math.random() * 100
+        sphereMeshes[s].position.y = -50 + Math.random() * 100
+        sphereMeshes[s].position.z = -50 + Math.random() * 100
+        sphereMeshes[s].castShadow = true
+        sphereMeshes[s].receiveShadow = true
+        scene.add(sphereMeshes[s])
+
+        const sphereShape = new CANNON.Sphere(sphereRadius, 8, 8)
+        sphereBodies.push(new CANNON.Body({ mass: sphereRadius, }))
+        sphereBodies[s].addShape(sphereShape)
+        sphereBodies[s].position.x = sphereMeshes[s].position.x
+        sphereBodies[s].position.y = sphereMeshes[s].position.y
+        sphereBodies[s].position.z = sphereMeshes[s].position.z
+
+        // Add random velocity
+        const randomVelocity = new CANNON.Vec3(
+            -2.5 * Math.random() * 5,
+            -2.5 * Math.random() * 5,
+            -2.5 * Math.random() * 5
+        )
+        sphereBodies[s].velocity.set(randomVelocity.x, randomVelocity.y, randomVelocity.z)
+
+        // Add random angular velocity
+        const randomAngularVelocity = new CANNON.Vec3(
+            -1 + Math.random() * 2,
+            -1 + Math.random() * 2,
+            -1 + Math.random() * 2
+        )
+        sphereBodies[s].angularVelocity.set(randomAngularVelocity.x, randomAngularVelocity.y, randomAngularVelocity.z)
+
+        // Set angular damping
+        sphereBodies[s].angularDamping = 0.9
+
+        world.addBody(sphereBodies[s])
     }
-    const steadycamBounds = {
-        x: { min: -2.5, max: 2.5 },
-        y: { min: 0, max: 1.5 },
-        z: { min: -15, max: -4 }
-    }; */
 
-    const steadycamFlowSpeed = 0.1; // Aumentato il valore per una maggiore velocità
-    const steadycamFlowAmplitude = 0.1; // Aumentato il valore per una maggiore ampiezza
-    let steadycamFlowTime = 0;
-    function clamp(value, min, max) {
-        return Math.min(Math.max(value, min), max);
+    const explode = () => {
+        sphereBodies.forEach((s) => {
+            s.force.set(s.position.x, s.position.y, s.position.z).normalize()
+            s.velocity = s.force.scale(Math.random() * 100)
+        })
+        directorTimeOut = setTimeout(explode, 1000 + Math.random() * 5000);
     }
-    const steadycamBounds = {
-    x: { min: -5, max: 5 }, // Allargati i limiti sull'asse x
-    y: { min: 0, max: 3 }, // Allargati i limiti sull'asse y
-    z: { min: -20, max: -3 } // Allargati i limiti sull'asse z
-    };
 
-    noise3D = NOISE.createNoise3D()
-    const t0 = Math.random() * 10
+    const playDirector = () => {
+        directorTimeOut = setTimeout(explode, 5000 + Math.random() * 10000);
+    }
+    playDirector()
+
     const clock = new THREE.Clock()
+    let delta
+
+    const v = new CANNON.Vec3()
+    world.addEventListener('preStep', () => {
+        sphereBodies.forEach((s, i) => {
+            const v = new CANNON.Vec3()
+            v.copy(sphereCenterBody.position)
+            v.vsub(s.position, v)
+            const distance = v.length()
+            v.normalize()
+            const forceMagnitude = 10000 / Math.pow(distance, 2)
+            v.scale(forceMagnitude, v)
+            s.applyForce(v, s.position)
+        })
+    })
 
     // ANIMATE
     const animate = () => {
-        if (showStats) stats.begin() // XXX
-        if (!paused) {
+        if (showStats) stats.begin()
 
-            const t = t0 + performance.now() * 0.0001
-            let dt = clock.getDelta()
+        delta = Math.min(clock.getDelta(), 0.1)
+        world.step(delta)
 
-            // ANIMATION
-            const t1 = t * p.lightSpeed + 0
-            const t2 = t1 + 10
-            camera.position.set(noise3D(t1, 0, 0) * 2, noise3D(0, t1 + 4, 0) * 1, -6)
-            controls.target.set(noise3D(t2, 0, 0) * 2, 1, noise3D(0, t2 + 4, 0) * 2)
-            // ...
+        // Apply gravitational force to the central sphere
+        // v.set(-sphereCenterBody.position.x, -sphereCenterBody.position.y, -sphereCenterBody.position.z).normalize()
+        // v.scale(1, sphereCenterBody.force)
+        // sphereCenterBody.applyLocalForce(v)
+        // sphereCenterBody.force.y += sphereCenterBody.mass
 
-            // Update steadycam flow time
-            steadycamFlowTime += dt * steadycamFlowSpeed;
 
-            // Calculate steadycam flow offsets using noise functions
-            const steadycamFlowX = noise3D(steadycamFlowTime, 0, 0) * steadycamFlowAmplitude;
-            const steadycamFlowY = noise3D(0, steadycamFlowTime, 0) * steadycamFlowAmplitude;
-            const steadycamFlowZ = noise3D(0, 0, steadycamFlowTime) * steadycamFlowAmplitude;
+        sphereCenter.position.set(sphereCenterBody.position.x, sphereCenterBody.position.y, sphereCenterBody.position.z)
+        sphereCenter.quaternion.set(
+            sphereCenterBody.quaternion.x,
+            sphereCenterBody.quaternion.y,
+            sphereCenterBody.quaternion.z,
+            sphereCenterBody.quaternion.w
+        )
 
-            // Apply steadycam flow to camera position if not in drag mode
-            if (!controls.isDragging) {
-                // const cameraPosition = controls.object.position.clone();
-                // cameraPosition.add(new THREE.Vector3(steadycamFlowX, steadycamFlowY, steadycamFlowZ));
-                // controls.object.position.copy(cameraPosition);
-                const cameraPosition = controls.object.position.clone();
-                cameraPosition.add(new THREE.Vector3(steadycamFlowX, steadycamFlowY, steadycamFlowZ));
+        sphereBodies.forEach((s, i) => {
 
-                // Clamp the camera position within the defined boundaries
-                cameraPosition.x = clamp(cameraPosition.x, steadycamBounds.x.min, steadycamBounds.x.max);
-                cameraPosition.y = clamp(cameraPosition.y, steadycamBounds.y.min, steadycamBounds.y.max);
-                cameraPosition.z = clamp(cameraPosition.z, steadycamBounds.z.min, steadycamBounds.z.max);
+            // Aggiorna la posizione e la rotazione delle sfere
+            sphereMeshes[i].position.set(s.position.x, s.position.y, s.position.z)
+            sphereMeshes[i].quaternion.set(
+                s.quaternion.x,
+                s.quaternion.y,
+                s.quaternion.z,
+                s.quaternion.w
+            )
 
-                controls.object.position.copy(cameraPosition);
-            }
-        }
+        })
+
+        // if (!controls.isDragging) {
+        //     const cameraPosition = controls.object.position.clone();
+        //     cameraPosition.z = MIC.getHighsVol(10, 20);
+        //     controls.object.position.copy(cameraPosition);
+        // }
 
         controls.update()
-        renderer.render(scene, camera) // RENDER
-        if (showStats) stats.end() // XXX
+        renderer.render(scene, camera)
 
+        if (showStats) stats.end()
 
-        animation = requestAnimationFrame(animate) // CIAK
+        animation = requestAnimationFrame(animate)
     }
+
     animate()
 }
 
 export function dispose() {
     cancelAnimationFrame(animation)
     controls?.dispose()
-    groundGeom?.dispose()
-    reflectorBackGeom?.dispose()
-    groundMate?.dispose()
-    stepSideGeom?.dispose()
-    mirrorMate?.dispose()
-    mirrorBack?.dispose()
+    camera = null
+    sphereMeshes.forEach((mesh) => {
+        mesh.geometry.dispose();
+        mesh.material.dispose();
+    });
+    sphereBodies.length = 0
+    light1?.dispose()
+    light2?.dispose()
+    if (directorTimeOut)
+        clearTimeout(directorTimeOut)
+    // world = null
     noise3D = null
-    // gui?.destroy()
-    // ...
     window.removeEventListener('resize', onWindowResize)
 }

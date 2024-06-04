@@ -17,21 +17,21 @@ export function sketch() {
 
     const p = {
         // lights
-        night: true,
+        night: false,
         // lance
-        lanceLength: 3 + Math.random() * 1,
+        lanceLength: 1 + Math.random() * 1,
         baseDiam: .04,
         topDiam: 0,
-        numRows: 5 + Math.floor(Math.random() * 10),
-        numCols: 5 + Math.floor(Math.random() * 10),
-        spacing: .3 + Math.random() * .7,
-        spacingVariability: .2,
+        numRows: 1 + Math.floor(Math.random() * 2),
+        numCols: 1 + Math.floor(Math.random() * 2),
+        spacing: .2 + Math.random() * .7,
+        spacingVariability: Math.random(),
         lanceMass: 1,
         // view
         lookAtCenter: new THREE.Vector3(0, 0, 0),
         cameraPosition: new THREE.Vector3(0, -0.9, - 3 - Math.random() * 2),
         autoRotate: true,
-        autoRotateSpeed: -.2 + Math.random() * .4,
+        autoRotateSpeed: -.4 + Math.random() * .8,
         camera: 35,
         // fireflies
         // numfireflies: 10, // xxx
@@ -244,7 +244,7 @@ export function sketch() {
 
     // LIGHTS
     let lightIntensity
-    if (p.night) lightIntensity = .5
+    if (p.night) lightIntensity = .5 * PI
     else lightIntensity = 4 * PI
     light = new THREE.DirectionalLight(0xffffff, lightIntensity)
     light.position.set(10, 20, -20)

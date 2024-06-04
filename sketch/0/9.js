@@ -21,7 +21,7 @@ export function sketch() {
         maxSphereRadius: 2,
         // camera
         lookAtCenter: new THREE.Vector3(0, 0, 0),
-        cameraPosition: new THREE.Vector3(25, -25, Math.random() * 75),
+        cameraPosition: new THREE.Vector3(25, -25 + Math.random() * 50, 70 + Math.random() * 40),
         autoRotate: true,
         autoRotateSpeed: -10 + Math.random() * 20,
         camera: 35,
@@ -46,9 +46,9 @@ export function sketch() {
     controls = new OrbitControls(camera, renderer.domElement)
     controls.enablePan = false
     controls.enableDamping = true
-    controls.dampingFactor = 0.005
-    controls.maxPolarAngle = Math.PI / 2 + 0.2
-    controls.minPolarAngle = Math.PI / 2 - 0.4
+    controls.dampingFactor = 0.01
+    // controls.maxPolarAngle = Math.PI / 2 + 0.2
+    // controls.minPolarAngle = Math.PI / 2 - 0.4
     controls.autoRotate = p.autoRotate
     controls.autoRotateSpeed = p.autoRotateSpeed
     controls.target = p.lookAtCenter
@@ -129,13 +129,17 @@ export function sketch() {
     });
 
     const centralMate = new THREE.MeshPhysicalMaterial({
-        envMap: cubeTextures[0].texture,
+        envMap: cubeTextures[1].texture,
         color: 0xE33117,
         // emissive: 0xE33117,
-        metalness: 0.7,
-        roughness: 0.2,
-        transparent: true, // Abilita la trasparenza
-        opacity: 0.8 // Imposta il livello di trasparenza (0.5 è un esempio, puoi modificarlo come preferisci)
+        clearcoatRoughness: .5,
+        metalness: .9,
+        roughness: 0.1,
+        ior: 1.5,
+        thickness: .4,
+        transmission: 1,
+        transparent: true, 
+        opacity: .9, 
     });
 
     const sphereCenterRadius = 5
@@ -215,11 +219,11 @@ export function sketch() {
             s.force.set(s.position.x, s.position.y, s.position.z).normalize()
             s.velocity = s.force.scale(Math.random() * 100)
         })
-        directorTimeOut = setTimeout(explode, 5000 + Math.random() * 10000);
+        directorTimeOut = setTimeout(explode, 1000 + Math.random() * 5000);
     }
 
     const playDirector = () => {
-        directorTimeOut = setTimeout(explode, 10000);
+        directorTimeOut = setTimeout(explode, 5000 + Math.random() * 10000);
     }
     playDirector()
 
@@ -298,7 +302,7 @@ export function dispose() {
     light1?.dispose()
     light2?.dispose()
     if (directorTimeOut)
-     clearTimeout(directorTimeOut)
+        clearTimeout(directorTimeOut)
     // world = null
     noise3D = null
     window.removeEventListener('resize', onWindowResize)

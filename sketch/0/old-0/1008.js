@@ -29,10 +29,11 @@ export function sketch() {
     const p = {
         // objects
         mirrorInclination: -.05,
+        sphereCenterSpeed: .1,
         // ...
         // view
         lookAtCenter: new THREE.Vector3(0, 1.5, 0),
-        cameraPosition: new THREE.Vector3(0, 1, -5),
+        cameraPosition: new THREE.Vector3(5, 1, 5),
         autoRotate: true,
         autoRotateSpeed: 0,
         camera: 35,
@@ -68,7 +69,7 @@ export function sketch() {
     controls.enableDamping = true
     controls.dampingFactor = 0.05
     controls.minDistance = 1
-    controls.maxDistance = 6.5
+    controls.maxDistance = 15
     controls.maxPolarAngle = Math.PI / 2 + 0.2
     controls.minPolarAngle = 0
     controls.autoRotate = p.autoRotate
@@ -112,6 +113,16 @@ export function sketch() {
         fog: false,
 
     })
+    const centralMate = new THREE.MeshPhysicalMaterial({
+        envMap: cubeTextures[0].texture,
+        color: 0xE33117,
+        emissive: 0xE33117,
+        metalness: 0.7,
+        roughness: 0.2,
+        transparent: true, // Abilita la trasparenza
+        opacity: 0.8 // Imposta il livello di trasparenza (0.5 è un esempio, puoi modificarlo come preferisci)
+    });
+
     // ...
 
     // GEOMETRIES
@@ -125,6 +136,16 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
     // ...
+
+    const sphereCenterRadius = .30
+    const sphereCenterGeom = new THREE.SphereGeometry(sphereCenterRadius, 32, 32)
+    const sphereCenter = new THREE.Mesh(sphereCenterGeom, centralMate)
+    sphereCenter.position.x = 2.5
+    sphereCenter.position.y = 2
+    sphereCenter.position.z = 0
+    sphereCenter.castShadow = true
+    sphereCenter.receiveShadow = true
+    scene.add(sphereCenter)
 
     // Let's load our low poly human
     //GLTFLoader
@@ -181,7 +202,7 @@ export function sketch() {
 
     // REFLECTOR
     let mirrorW = .7
-    let mirrorH = 3
+    let mirrorH = 2.4
     mirrorBack = new Reflector(
         new THREE.PlaneGeometry(mirrorW, mirrorH),
         {
@@ -247,7 +268,7 @@ export function sketch() {
     const fireFly = new THREE.Mesh(fireFlyGeom, fireFlyMate)
     fireFlyLight = new THREE.PointLight(0xff0000, 40 * PI, 5);
     fireFlyLight.castShadow = true;
-    // fireFlyLight.decay = 0
+    fireFlyLight.decay = 0
     scene.add(fireFlyLight);
     scene.add(fireFly)
 
@@ -287,9 +308,9 @@ export function sketch() {
         return Math.min(Math.max(value, min), max);
     }
     const steadycamBounds = {
-        x: { min: -2, max: 1.3 },
-        y: { min: 0, max: 1 },
-        z: { min: -6.5, max: -4.5 }
+        x: { min: 1, max: 5 },
+        y: { min: 1, max: 3 },
+        z: { min: 9, max: 15 }
     };
 
     // NOISE
@@ -311,11 +332,18 @@ export function sketch() {
             let dt = clock.getDelta()
             if (mixer) mixer.update(dt)
 
-            const t2 = t * p.fireFlySpeed + 10
-            fireFly.position.x = -1 + noise3D(0, t2, 0) * 2
-            fireFly.position.y = p.floor + 2 + noise3D(t2 + 4, 0, 0) * 4
-            fireFly.position.z = -5 - noise3D(0, 0, t2 + 8) * 3
-            fireFlyLight.position.copy(fireFly.position)
+            // const t2 = t * p.fireFlySpeed + 10
+            // fireFly.position.x = -1 + noise3D(0, t2, 0) * 2
+            // fireFly.position.y = p.floor + 2 + noise3D(t2 + 4, 0, 0) * 4
+            // fireFly.position.z = -5 - noise3D(0, 0, t2 + 8) * 3
+
+
+            const t3 = t * p.sphereCenterSpeed + 10
+            sphereCenter.position.x = -2 + noise3D(0, t3, 0) * 4
+            sphereCenter.position.y = 2 + noise3D(t3 + 4, 0, 0) * 3
+            sphereCenter.position.z = -1 + noise3D(0, 0, t3 + 8) * 2
+            fireFly.position.copy(sphereCenter.position)
+            fireFlyLight.position.copy(sphereCenter.position)
 
             // Update steadycam flow time
             steadycamFlowTime += dt * steadycamFlowSpeed;

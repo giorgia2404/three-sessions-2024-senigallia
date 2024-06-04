@@ -25,7 +25,7 @@ export function sketch() {
         lanceMass: 1,
         // view
         lookAtCenter: new THREE.Vector3(0, 0, 0),
-        cameraPosition: new THREE.Vector3(0, -0.9, - 3 - Math.random() * 2),
+        cameraPosition: new THREE.Vector3(0, -0.9, -3),
         autoRotate: true,
         autoRotateSpeed: -.2 + Math.random() * .4,
         camera: 35,
@@ -217,7 +217,7 @@ export function sketch() {
         fireFlyLight.castShadow = true; // Abilita la creazione di ombre
         arrayfireflies.push(fireFly);
         fireFly.add(fireFlyLight);
-       //scene.add(fireFlyLight)
+        //scene.add(fireFlyLight)
         scene.add(fireFly)
     }
 
@@ -331,7 +331,14 @@ export function sketch() {
             }
         }
 
-        controls.update()
+        if (!controls.isDragging) {
+            const cameraPosition = controls.object.position.clone();
+            cameraPosition.z = MIC.getHighsVol(0, 10);
+            controls.object.position.copy(cameraPosition);
+        }
+
+        controls.update();
+
         renderer.render(scene, camera)
         if (showStats) stats.end()
 

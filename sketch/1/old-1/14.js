@@ -200,6 +200,7 @@ export function sketch() {
             ramp.position.y = p.floor + randomVerticalOffset;
         });
 
+        // xxx
         if (rampBuildDelay++ % 10 === 0 && rampBuildCounter < ramps.length * (minSteps + maxStepsDelta)) {
             let rampIndex = Math.floor(rampBuildCounter / (minSteps + maxStepsDelta));
             let stepIndex = rampBuildCounter % (minSteps + maxStepsDelta);
