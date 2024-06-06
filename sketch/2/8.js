@@ -1,58 +1,41 @@
-// CLOTH
+//TEST CLOTH + ROTATION 2 VERTICES (M)
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
-
-let scene, camera, animation, onWindowResize, controls, onMouseMove
+let scene, animation, onWindowResize, controls, onMouseMove
 let groundGeom
-let groundMate, clothMaterial, mirrorMate, clothGeometry
-let world, groundBody
+let groundMate, clothMaterial, mirrorMate
+let world
 let noise3D
 let cloth, clothParticles, constraints = []
 let flowField
-let light, lightD, ambientLight
-const anchorBodies = [];
-const vertices = [];
-
-let composer
-let renderPass
-let bloomPass
 
 export function sketch() {
 
     let mouse = new THREE.Vector2()
-    const coeffMouse = 1
     onMouseMove = (event) => {
-        mouse.x = ((event.clientX / window.innerWidth) * 2 - 1) * coeffMouse
-        mouse.y = -((event.clientY / window.innerHeight)) * 2 + 1 * coeffMouse
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
     };
     window.addEventListener('mousemove', onMouseMove);
 
     const p = {
         // cloth
-        clothWidth: 14,
+        clothWidth: 20,
         clothHeight: 10,
-        clothResolution: 25,
-        // viewgf
-        lookAtCenter: new THREE.Vector3(0, 2, 3),
-        cameraPosition: new THREE.Vector3(0, 0, -6),
+        clothResolution: 22,
+        // view
+        lookAtCenter: new THREE.Vector3(0, 5, 3),
+        cameraPosition: new THREE.Vector3(0, 1, - 25),
         autoRotate: false,
         autoRotateSpeed: -1 + Math.random() * 2,
         camera: 35,
-        // bloom
-        exposure: 0.5,
-        bloomStrength: 2,
-        bloomThreshold: .2,
-        bloomRadius: .7,
         // world
         background: new THREE.Color(0x000000),
         clothMass: 1,
-        gravity: -18,
-        wind: true,
-        windStrength: 3,
+        gravity: -9,
+        wind: false,
+        windStrength: 2 + Math.random() * 8,
         floor: -2,
     };
 
@@ -62,7 +45,7 @@ export function sketch() {
     let paused = false;
 
     // CAMERA
-    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
     camera.position.copy(p.cameraPosition)
     camera.lookAt(p.lookAtCenter)
 
@@ -81,18 +64,7 @@ export function sketch() {
     world = new CANNON.World({
         gravity: new CANNON.Vec3(0, p.gravity, 0)
     });
-    world.solver.iterations = 10
-
-    // POST-PROCESSING
-    composer = new EffectComposer(renderer)
-    renderPass = new RenderPass(scene, camera)
-    composer.addPass(renderPass)
-    bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    bloomPass.threshold = p.bloomThreshold
-    bloomPass.strength = p.bloomStrength
-    bloomPass.radius = p.bloomRadius
-    composer.addPass(bloomPass)
-
+    world.solver.iterations = 20
 
     // MATERIALS
     groundMate = new THREE.MeshStandardMaterial({
@@ -111,7 +83,7 @@ export function sketch() {
     ground.castShadow = false
     ground.receiveShadow = true
     scene.add(ground)
-    groundBody = new CANNON.Body({
+    const groundBody = new CANNON.Body({
         position: new CANNON.Vec3(0, p.floor - 1, 0),
         mass: 0,
         shape: new CANNON.Plane(),
@@ -126,13 +98,11 @@ export function sketch() {
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = false;
     controls.enableDamping = true;
-    controls.dampingFactor = 0.001;
+    controls.dampingFactor = 0.05;
     controls.minDistance = 5;
     controls.maxDistance = 40;
-    controls.maxAzimuthAngle = - Math.PI / 2
-    controls.minAzimuthAngle = Math.PI / 2
     controls.maxPolarAngle = Math.PI / 2 + 0.2;
-    controls.minPolarAngle = Math.PI / 2 - 0.4;
+    controls.minPolarAngle = - Math.PI
     controls.autoRotate = p.autoRotate;
     controls.autoRotateSpeed = p.autoRotateSpeed;
     controls.target = p.lookAtCenter;
@@ -142,10 +112,10 @@ export function sketch() {
     const cHeight = p.clothHeight
     const Nx = p.clothResolution
     const Ny = p.clothResolution
-    clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny)
+    const clothGeometry = new THREE.PlaneGeometry(cWidth, cHeight, Nx, Ny)
     mirrorMate = new THREE.MeshPhongMaterial({
         color: 0x444444,
-        envMap: cubeTextures[0].texture,
+        envMap: cubeTextures[1].texture,
         side: THREE.DoubleSide,
         flatShading: true,
         // combine: THREE.addOperation,
@@ -218,9 +188,11 @@ export function sketch() {
     const anchorPoints = [
         // new CANNON.Vec3(-cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
         // new CANNON.Vec3(cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
-        new CANNON.Vec3(cWidth / 2 + .2, p.floor + cHeight + 8 + anchorDistance, cHeight / 2),
-        new CANNON.Vec3(-cWidth / 2 - .2, p.floor + cHeight + 8 + anchorDistance, cHeight / 2),
+        new CANNON.Vec3(cWidth / 2 + .2, p.floor + cHeight + 6 + anchorDistance, cHeight / 2),
+        new CANNON.Vec3(-cWidth / 2 - .2, p.floor + cHeight + 6 + anchorDistance, cHeight / 2),
     ];
+
+    const anchorBodies = [];
     anchorPoints.forEach((point) => {
         const anchorBody = new CANNON.Body({
             mass: 0,
@@ -245,8 +217,15 @@ export function sketch() {
         constraints.push(constraint);
     });
 
-    // Initialize the vertices of the cloth
+    // Calcola il punto mediano tra i due anchorPoints originali
+    const midpoint = new CANNON.Vec3(
+        (anchorPoints[0].x + anchorPoints[1].x) / 2,
+        (anchorPoints[0].y + anchorPoints[1].y) / 2,
+        (anchorPoints[0].z + anchorPoints[1].z) / 2
+    );
 
+    // Initialize the vertices of the cloth
+    const vertices = [];
     for (let x = 0; x <= Nx; x++) {
         for (let y = 0; y <= Ny; y++) {
             vertices.push(new THREE.Vector3());
@@ -254,8 +233,8 @@ export function sketch() {
     }
     clothGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices.length * 3), 3));
 
-    light = new THREE.PointLight(0xffffff, 7 * PI)
-    light.position.set(0, 16, -10)
+    const light = new THREE.PointLight(0xffffff, 7 * PI)
+    light.position.set(0, 10, -10)
     // light.target.position.set(0, 2, 10)
     light.castShadow = true
     light.shadow.radius = 16
@@ -269,13 +248,13 @@ export function sketch() {
     // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
-    lightD = new THREE.DirectionalLight(0xffffff, 3 * PI)
+    const lightD = new THREE.DirectionalLight(0xffffff, 3 * PI)
     lightD.position.set(2, 0, -5)
-    lightD.target.position.set(0, 2, 0)
+    lightD.target.position.set(0, 2, 10)
     lightD.decay = 0
     scene.add(lightD)
 
-    ambientLight = new THREE.AmbientLight(0xffffff)
+    const ambientLight = new THREE.AmbientLight(0xffffff)
     scene.add(ambientLight)
 
     // NOISE
@@ -288,8 +267,6 @@ export function sketch() {
     function createFlowField(size, offsetSpeed) {
         const flowField = []
         const noiseFreq = 0.1 // Frequenza del rumore per il flowfield
-        // const bass = MIC.getBassVol(-5, +5)
-        // const mids = MIC.getMidsVol(1, 3)
 
         for (let y = 0; y < size; y++) {
             const row = []
@@ -297,7 +274,7 @@ export function sketch() {
                 const noiseX = noise3D(x * noiseFreq, offsetSpeed, y * noiseFreq);
                 const noiseY = noise3D(x * noiseFreq, y * noiseFreq, offsetSpeed);
 
-                // const windDirection = new THREE.Vector3(- mouse.x, - mouse.y, 0).normalize();
+                const windDirection = new THREE.Vector3(- mouse.x, - mouse.y, 0).normalize();
                 const windIntensity = Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
                 // const vector = windDirection.multiplyScalar(windIntensity * p.windStrength);
                 const vector = new THREE.Vector3(-mouse.x + noiseX, 0, -mouse.y + noiseY).normalize().multiplyScalar(p.windStrength + windIntensity * 2);
@@ -314,6 +291,29 @@ export function sketch() {
     const timeStep = 1 / 60
     const stepsPerFrame = 2
     let lastCallTime
+
+    let rotRadius = 4;
+    let targetRotRadius = rotRadius;
+    let targetRotAngle = 0;
+    let tRot = 0;
+    const noiseFreq = 0.5;
+    const minRotRadius = .5;
+    const maxRotRadius = 12;
+    const minRotSpeed = -.5;
+    const maxRotSpeed = .5;
+    const rotRadiusLerp = 0.01;
+    const rotAngleLerp = 0.01;
+    const accelerationThreshold = 0.65;
+    const accelerationMultiplier = 25;
+
+    function smoothedNoise(t, freq, min, max, threshold, multiplier) {
+        const noise = noise3D(t * freq, 0, 0);
+        const value = THREE.MathUtils.mapLinear(noise, -1, 1, min, max);
+        if (Math.random() < threshold) {
+            return value * multiplier;
+        }
+        return value;
+    }
 
     const animate = () => {
         if (showStats) stats.begin();
@@ -361,6 +361,27 @@ export function sketch() {
                 }
             }
 
+
+
+            targetRotRadius = smoothedNoise(t, noiseFreq, minRotRadius, maxRotRadius);
+            targetRotAngle += smoothedNoise(t, noiseFreq, minRotSpeed, maxRotSpeed, accelerationThreshold, accelerationMultiplier) * timeStep;
+
+            rotRadius += (targetRotRadius - rotRadius) * rotRadiusLerp;
+            tRot += (targetRotAngle - tRot) * rotAngleLerp;
+
+
+            anchorBodies[0].position.set(
+                midpoint.x + rotRadius * Math.cos(tRot),
+                midpoint.y,
+                midpoint.z + rotRadius * Math.sin(tRot)
+            );
+
+            anchorBodies[1].position.set(
+                midpoint.x + rotRadius * Math.cos(tRot + Math.PI),
+                midpoint.y,
+                midpoint.z + rotRadius * Math.sin(tRot + Math.PI)
+            );
+
             const positions = cloth.geometry.attributes.position.array;
             for (let x = 0; x <= Nx; x++) {
                 for (let y = 0; y <= Ny; y++) {
@@ -374,12 +395,10 @@ export function sketch() {
             cloth.geometry.attributes.position.needsUpdate = true
         }
 
-        bloomPass.strength = MIC.getHighsVol(1.5, 7)
-
         controls.update()
         renderer.render(scene, camera)
         if (showStats) stats.end()
-        composer.render() // POST-PROCESSING
+
         animation = requestAnimationFrame(animate)
     };
     animate()
@@ -387,34 +406,14 @@ export function sketch() {
 
 export function dispose() {
     cancelAnimationFrame(animation)
-    scene.remove(cloth);
-    clothParticles?.forEach((row) => {
-        row.forEach((particle) => {
-            world.removeBody(particle);
-        });
-    });
-    constraints?.forEach((constraint) => {
-        world.removeConstraint(constraint);
-    });
-    anchorBodies?.forEach((anchorBody) => {
-        world.removeBody(anchorBody);
-    });
-    world.removeBody(groundBody);
-    light?.dispose();
-    lightD?.dispose();
-    // constraints = null;
-    clothParticles = null;
     controls?.dispose()
     clothMaterial?.dispose()
     mirrorMate?.dispose()
     groundGeom?.dispose()
     groundMate?.dispose()
-    clothGeometry?.dispose();
-    // world = null
-    // vertices= null;
+    world = null
     noise3D = null
     flowField = null
-    camera = null
     window?.removeEventListener('resize', onWindowResize)
     window?.removeEventListener('mousemove', onMouseMove)
 }

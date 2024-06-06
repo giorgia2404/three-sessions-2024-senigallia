@@ -29,7 +29,7 @@ export function sketch() {
         clothResolution: 25,
         // viewgf
         lookAtCenter: new THREE.Vector3(0, 5, 3),
-        cameraPosition: new THREE.Vector3(0, 1, - 7 - Math.random() * 25),
+        cameraPosition: new THREE.Vector3(0, 1, -22),
         autoRotate: false,
         autoRotateSpeed: -1 + Math.random() * 2,
         camera: 35,
@@ -38,7 +38,7 @@ export function sketch() {
         clothMass: 1,
         gravity: -18,
         wind: true,
-        windStrength: 2 + Math.random() * 8,
+        windStrength: 4,
         floor: -2,
     };
 
@@ -101,9 +101,11 @@ export function sketch() {
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = false;
     controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
+    controls.dampingFactor = 0.001;
     controls.minDistance = 5;
     controls.maxDistance = 40;
+    controls.maxAzimuthAngle = - Math.PI / 2
+    controls.minAzimuthAngle = Math.PI / 2
     controls.maxPolarAngle = Math.PI / 2 + 0.2;
     controls.minPolarAngle = Math.PI / 2 - 0.4;
     controls.autoRotate = p.autoRotate;
@@ -191,8 +193,8 @@ export function sketch() {
     const anchorPoints = [
         // new CANNON.Vec3(-cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
         // new CANNON.Vec3(cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
-        new CANNON.Vec3(cWidth / 2 + .2, p.floor + cHeight + 6 + anchorDistance, cHeight / 2),
-        new CANNON.Vec3(-cWidth / 2 - .2, p.floor + cHeight + 6 + anchorDistance, cHeight / 2),
+        new CANNON.Vec3(cWidth / 2 + .2, p.floor + cHeight + 8 + anchorDistance, cHeight / 2),
+        new CANNON.Vec3(-cWidth / 2 - .2, p.floor + cHeight + 8 + anchorDistance, cHeight / 2),
     ];
     anchorPoints.forEach((point) => {
         const anchorBody = new CANNON.Body({
@@ -227,9 +229,9 @@ export function sketch() {
     }
     clothGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices.length * 3), 3));
 
-    light = new THREE.DirectionalLight(0xffffff, 7 * PI)
-    light.position.set(0, 10, -5)
-    light.target.position.set(0, 2, 10)
+    light = new THREE.PointLight(0xffffff, 7 * PI)
+    light.position.set(0, 16, -10)
+    // light.target.position.set(0, 2, 10)
     light.castShadow = true
     light.shadow.radius = 16
     light.shadow.camera.near = 2
@@ -239,12 +241,12 @@ export function sketch() {
     light.shadow.mapSize.height = shadowMapHeight
     light.decay = 0
     scene.add(light)
-    const lightHelper = new THREE.DirectionalLightHelper(light, 5);
+    // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
     lightD = new THREE.DirectionalLight(0xffffff, 3 * PI)
     lightD.position.set(2, 0, -5)
-    lightD.target.position.set(0, 2, 10)
+    lightD.target.position.set(0, 2, 0)
     lightD.decay = 0
     scene.add(lightD)
 

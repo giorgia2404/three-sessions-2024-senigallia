@@ -36,201 +36,201 @@ export function sketch() {
       color: 2,
       kind: 'idle'
     },
-    // {
-    //   name: 'run',
-    //   color: 2,
-    //   kind: 'idle'
-    // },
-    // {
-    //   name: 'Walk',
-    //   color: 2,
-    //   kind: 'idle'
-    // },
+    {
+      name: 'run',
+      color: 2,
+      kind: 'idle'
+    },
+    {
+      name: 'Walk',
+      color: 2,
+      kind: 'idle'
+    },
 
     // others 
-    // {
-    //   name: 'appeso',
-    //   color: 1,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'arrampicata',
-    //   color: 4,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'caduta',
-    //   color: 5,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'disteso',
-    //   color: 6,
-    //   kind: 'special',
-    //   repetitions: 2,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'eremita',
-    //   color: 7,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'forza',
-    //   color: 8,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'fuga',
-    //   color: 0,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: true
-    // },
-    // {
-    //   name: 'giustizia',
-    //   color: 1,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'guardingo',
-    //   color: 2,
-    //   kind: 'special',
-    //   repetitions: 1,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'imperatore',
-    //   color: 3,
-    //   kind: 'special',
-    //   repetitions: 1,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'imperatrice',
-    //   color: 4,
-    //   kind: 'special',
-    //   repetitions: 1,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'innamorati',
-    //   color: 5,
-    //   kind: 'special',
-    //   repetitions: 1,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'luna',
-    //   color: 6,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: true
-    // },
-    // {
-    //   name: 'mago',
-    //   color: 7,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'matto',
-    //   color: 8,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'Mondo',
-    //   color: 9,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'morte',
-    //   color: 10,
-    //   kind: 'special',
-    //   repetitions: 1,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'noia',
-    //   color: 0,
-    //   kind: 'special',
-    //   repetitions: 1,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'porta',
-    //   color: 1,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'ruota',
-    //   color: 2,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'salsa',
-    //   color: 3,
-    //   kind: 'special',
-    //   repetitions: 4,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'saluto',
-    //   color: 4,
-    //   kind: 'special',
-    //   repetitions: 2,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'sole',
-    //   color: 5,
-    //   kind: 'special',
-    //   repetitions: 3,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'solleva',
-    //   color: 6,
-    //   kind: 'special',
-    //   repetitions: 1,
-    //   loopInOut: false
-    // },
-    // {
-    //   name: 'tiene',
-    //   color: 7,
-    //   kind: 'special',
-    //   repetitions: 1,
-    //   loopInOut: false
-    // },
+    {
+      name: 'appeso',
+      color: 1,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'arrampicata',
+      color: 4,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'caduta',
+      color: 5,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'disteso',
+      color: 6,
+      kind: 'special',
+      repetitions: 2,
+      loopInOut: false
+    },
+    {
+      name: 'eremita',
+      color: 7,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'forza',
+      color: 8,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'fuga',
+      color: 0,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: true
+    },
+    {
+      name: 'giustizia',
+      color: 1,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'guardingo',
+      color: 2,
+      kind: 'special',
+      repetitions: 1,
+      loopInOut: false
+    },
+    {
+      name: 'imperatore',
+      color: 3,
+      kind: 'special',
+      repetitions: 1,
+      loopInOut: false
+    },
+    {
+      name: 'imperatrice',
+      color: 4,
+      kind: 'special',
+      repetitions: 1,
+      loopInOut: false
+    },
+    {
+      name: 'innamorati',
+      color: 5,
+      kind: 'special',
+      repetitions: 1,
+      loopInOut: false
+    },
+    {
+      name: 'luna',
+      color: 6,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: true
+    },
+    {
+      name: 'mago',
+      color: 7,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'matto',
+      color: 8,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'Mondo',
+      color: 9,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'morte',
+      color: 10,
+      kind: 'special',
+      repetitions: 1,
+      loopInOut: false
+    },
+    {
+      name: 'noia',
+      color: 0,
+      kind: 'special',
+      repetitions: 1,
+      loopInOut: false
+    },
+    {
+      name: 'porta',
+      color: 1,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'ruota',
+      color: 2,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'salsa',
+      color: 3,
+      kind: 'special',
+      repetitions: 4,
+      loopInOut: false
+    },
+    {
+      name: 'saluto',
+      color: 4,
+      kind: 'special',
+      repetitions: 2,
+      loopInOut: false
+    },
+    {
+      name: 'sole',
+      color: 5,
+      kind: 'special',
+      repetitions: 3,
+      loopInOut: false
+    },
+    {
+      name: 'solleva',
+      color: 6,
+      kind: 'special',
+      repetitions: 1,
+      loopInOut: false
+    },
+    {
+      name: 'tiene',
+      color: 7,
+      kind: 'special',
+      repetitions: 1,
+      loopInOut: false
+    },
   ];
 
   // PARAMETERS
   const p = {
     // human
-    idleMinDuration: 4,
-    idleMaxDuration: 10,
-    shadowMode: true,
+    idleMinDuration: 6,
+    idleMaxDuration: 15,
+    shadowMode: false,
     // colors
     availableColorsHighlights: [
       0xE48CFF, // Violet
@@ -273,12 +273,12 @@ export function sketch() {
     // ...
   }
 
-  // // debug shadowMode
+  // debug shadowMode
   // if (Math.random() > .5) {
   //   p.shadowMode = !p.shadowMode
   // }
 
-  // // debug other camera
+  // debug other camera
   // if (Math.random() > .5) {
   //   p.lookAtCenter = new THREE.Vector3(0, 1.5, 0)
   //   p.cameraPosition = new THREE.Vector3(-2, 2, -4)

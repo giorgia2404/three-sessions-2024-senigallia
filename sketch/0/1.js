@@ -1,276 +1,222 @@
-// MIRROR/CASLTLE - PRIMER
+// TANGO
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
 
-import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
-import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
-let scene, camera
-let groundMate, mirrorMate
-let groundGeom, stepSideGeom, reflectorBackGeom
-const ramps = []
-let mirrorBack // reflector
-let animation, light, lightD
-let onWindowResize
+let scene, camera, animation
+let light1, light2
+let onWindowResize, controls, onPostStep
+let world
 let noise3D
-// let gui
-let controls
+let directorTimeOut
+
+let composer
+let renderPass
+let bloomPass
+
+
 
 export function sketch() {
-    // console.log("Sketch launched")
-
     // PARAMETERS
     const p = {
-        // objects
-        lightSpeed: .2,
-        animate: false,
-        // mirror
-        mirrorInclination: .05,
-        // ...
-        // view
-        lookAtCenter: new THREE.Vector3(0, 2, 0),
-        cameraPosition: new THREE.Vector3(- 5 + Math.random() * 10, -0.4, -8),
-        autoRotate: false,
-        autoRotateSpeed: -1,
+        // camera
+        lookAtCenter: new THREE.Vector3(0, -5, 0),
+        cameraPosition: new THREE.Vector3(25, 0, 80),
+        autoRotate: true,
+        autoRotateSpeed: 7,
         camera: 35,
-        // ...
-        // world
-        background: new THREE.Color(0x00a28a),
-        floor: -0.5,
-        // ...
     }
 
-    // other parameters
-    let near = 0.2, far = 200
-    let shadowMapWidth = 2048, shadowMapHeight = 2048
-
     // CAMERA
-    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    let near = 0.2, far = 1000
+    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth /
+        window.innerHeight, near, far)
     camera.position.copy(p.cameraPosition)
     camera.lookAt(p.lookAtCenter)
 
     // WINDOW RESIZE
-    const onWindowResize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight
-        camera.updateProjectionMatrix()
-        renderer.setSize(window.innerWidth, window.innerHeight)
-    }
-    window.addEventListener('resize', onWindowResize)
+    onWindowResize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+    window.addEventListener('resize', onWindowResize);
 
     // CONTROLS
     controls = new OrbitControls(camera, renderer.domElement)
     controls.enablePan = false
     controls.enableDamping = true
-    controls.dampingFactor = 0.05
-    controls.minDistance = 5
-    controls.maxDistance = 15
-    controls.maxPolarAngle = Math.PI / 2
-    controls.minPolarAngle = Math.PI / 2 - 0.8
-    // controls.maxAzimuthAngle = - Math.PI / 2
-    // controls.minAzimuthAngle = Math.PI / 2
+    controls.dampingFactor = 0.01
+    // controls.maxPolarAngle = Math.PI / 2 + 0.2
+    // controls.minPolarAngle = Math.PI / 2 - 0.4
     controls.autoRotate = p.autoRotate
     controls.autoRotateSpeed = p.autoRotateSpeed
     controls.target = p.lookAtCenter
+    controls.update()
 
     // SCENE
     scene = new THREE.Scene()
-    scene.background = p.background
-    scene.fog = new THREE.Fog(scene.background, 3, 30)
-    // materials
-    // sky.mapping = THREE.CubeRefractionMapping
-    mirrorMate = new THREE.MeshPhongMaterial({
-        color: 0xffffff,
-        envMap: cubeTextures[1].texture,
-        side: THREE.DoubleSide,
-        // combine: THREE.addOperation,
-        // reflectivity: 1,
-        // flatShading: true,
-        // shininess: 100,
-        // specular: 0x999999,
-        fog: false
-    })
-    groundMate = new THREE.MeshStandardMaterial({
-        color: 0x000000,
-        roughness: 1,
-        metalness: 0,
-        fog: true,
-    })
+    scene.background = new THREE.Color(0x000000)
+    scene.fog = new THREE.Fog(scene.background, 100, 1000)
 
-    // REFLECTOR
-    let mirrorW = .7
-    let mirrorH = 3
-    mirrorBack = new Reflector(
-        new THREE.PlaneGeometry(mirrorW, mirrorH),
-        {
-            clipBias: 0.003,
-            color: new THREE.Color(0x7f7f7f),
-            textureWidth: window.innerWidth * window.devicePixelRatio,
-            textureHeight: window.innerHeight * window.devicePixelRatio,
-        })
-    mirrorBack.rotation.x = p.mirrorInclination
-    mirrorBack.position.y = p.floor + mirrorH / 2
-    mirrorBack.position.z = 3
-    mirrorBack.rotation.y = Math.PI
-    scene.add(mirrorBack)
-    // let's make the mirror backside to do a shadow
-    reflectorBackGeom = new THREE.PlaneGeometry(mirrorW, mirrorH)
-    let reflectorBack = new THREE.Mesh(reflectorBackGeom, mirrorMate)
-    reflectorBack.rotation.x = p.mirrorInclination
-    reflectorBack.position.y = p.floor + mirrorH / 2
-    reflectorBack.position.z = 3.05
-    reflectorBack.rotation.y = Math.PI
-    reflectorBack.castShadow = true
-    scene.add(reflectorBack)
-    // let's make some light below the mirror...
-    RectAreaLightUniformsLib.init();
-    let rectLightIntensity = 100
-    const rectLight = new THREE.RectAreaLight(0xffffff, rectLightIntensity, mirrorW + .025, mirrorH + .025)
-    rectLight.rotation.x = p.mirrorInclination
-    rectLight.position.set(0, p.floor + mirrorH / 2, 3.025)
-    scene.add(rectLight)
-    const rectLightHelper = new RectAreaLightHelper(rectLight)
-    rectLight.add(rectLightHelper)
-
-    // GEOMETRIES
-    // let's make a staircase mirror    
-    let stepW = 1.2
-    let stepH = 0.4
-    stepSideGeom = new THREE.PlaneGeometry(stepW, stepH)
-
-
-    let minSteps = 5
-    let maxStepsDelta = 10
-    for (let r = 0; r < 3; r++) {
-        const steps = new THREE.Group
-        const rampSteps = minSteps + Math.random() * maxStepsDelta
-        for (let s = 0; s < rampSteps; s++) {
-            const stepV = new THREE.Mesh(stepSideGeom, mirrorMate)
-            const stepH = new THREE.Mesh(stepSideGeom, mirrorMate)
-            // front side
-            stepV.position.y = p.floor + 0.2 + s * .4
-            stepV.position.z = s * .4
-            // top side
-            stepH.rotation.x = Math.PI / 2
-            stepH.position.y = p.floor + .4 + s * .4
-            stepH.position.z = .2 + s * .4
-            // shadows
-            stepH.castShadow = true
-            stepV.castShadow = true
-            // add to rampgroup
-            steps.add(stepH)
-            steps.add(stepV)
-        }
-        // find an orientation for the ramp
-        let rampOrientation = Math.floor(Math.random() * 4)
-        steps.rotation.y = Math.PI / 2 * rampOrientation
-        steps.position.x = - 3 + r * 3
-        ramps.push(steps)
-        scene.add(steps)
-    }
-    // let's make a ground
-    groundGeom = new THREE.PlaneGeometry(20, 20)
-    let ground = new THREE.Mesh(groundGeom, groundMate)
-    ground.position.set(0, p.floor, 0)
-    ground.rotation.x = - Math.PI / 2
-    ground.scale.set(100, 100, 100)
-    ground.castShadow = false
-    ground.receiveShadow = true
-    scene.add(ground)
-
-    light = new THREE.DirectionalLight(0xffffff, 3)//* PI)
-    light.position.set(-3, 0, -7)
-    light.target.position.set(0, 0, 0)
+    // LIGHT
+    const light = new THREE.PointLight(0xffffff, 5 * PI)
+    light.position.set(-10, 10, 10)
     light.castShadow = true
-    light.shadow.radius = 8
-    light.shadow.camera.near = 2
-    light.shadow.camera.far = 200
-    light.shadow.bias = 0.0001
-    light.shadow.mapSize.width = shadowMapWidth
-    light.shadow.mapSize.height = shadowMapHeight
-    // light.decay = 0
+    light.shadow.mapSize.width = 1024
+    light.shadow.mapSize.height = 1024
+    light.shadow.camera.near = 0.5
+    light.shadow.camera.far = 20
+    light.decay = 0
     scene.add(light)
-    // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
-    // scene.add(lightHelper);
 
-    lightD = new THREE.DirectionalLight(0xffffff, 1) //* PI)
-    lightD.position.set(-3, 3, 0)
-    lightD.target.position.set(0, 0, 0)
-    lightD.decay = 0
-    scene.add(lightD)
+    light1 = new THREE.SpotLight(0xE33117, 5 * PI)
+    light1.position.set(10, 5, 5)
+    // light1.angle = Math.PI / 4
+    // light1.penumbra = 0.5
+    light1.decay = 0
+    scene.add(light1)
 
-    const pointLight2 = new THREE.PointLight(0xffffff, 10 * PI)
-    pointLight2.position.set(-6, 2, +.5)
-    scene.add(pointLight2)
+    light2 = new THREE.SpotLight(0xE33117, 3 * PI)
+    light2.position.set(-5, 5, 5)
+    // light2.angle = Math.PI / 4
+    // light2.penumbra = 0.5
+    light2.castShadow = true
+    light2.shadow.mapSize.width = 1024
+    light2.shadow.mapSize.height = 1024
+    light2.shadow.camera.near = 0.5
+    light2.shadow.camera.far = 20
+    light2.decay = 0
+    scene.add(light2)
 
-    const pointLight = new THREE.PointLight(0xffffff, 10 * PI)
-    pointLight.position.set(6, 2, -.5)
-    scene.add(pointLight)
-    // const pointLight2 = new THREE.PointLight(0xffffff, .1)
-    // pointLight2.position.set(-30, 20, -20)
-    // scene.add(pointLight2)
-    const ambientLight = new THREE.AmbientLight(0x555555)
-    scene.add(ambientLight)
+    //CANNON WORD
+    world = new CANNON.World()
+    world.gravity.set(0, -1, 0) // setting minimal gravity otherwise you lose friction calculations
 
-    // GUI
-    // gui = new GUI.GUI()
-    // const nameFolder = gui.addFolder('Name of the folder')
-    // nameFolder.add(cube.rotation, 'x', 0, Math.PI * 2)
-    // nameFolder.open()
-    // ...
+    // POST-PROCESSING
+    composer = new EffectComposer(renderer)
+    renderPass = new RenderPass(scene, camera)
+    composer.addPass(renderPass)
+    bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPass.threshold = p.bloomThreshold
+    bloomPass.strength = p.bloomStrength
+    bloomPass.radius = p.bloomRadius
+    composer.addPass(bloomPass)
 
-    noise3D = NOISE.createNoise3D()
-    const t0 = Math.random() * 10
+    //MATERIAL
+    //material = new THREE.MeshPhongMaterial({ 
+    // color: 0x3300ff, specular:
+    // 0x555555, shininess: 30
+    // })
+    // material = new THREE.MeshStandardMaterial({
+    // color: 0xE33117,
+    // emissive: 0xE33117,
+    // metalness: 0.7,
+    // roughness: 0.2
+    // })
+
+    // material = new THREE.MeshStandardMaterial({
+    // envMap: cubeTextures[0].texture,
+    // color: 0xE33117,
+    // emissive: 0xE33117,
+    // metalness: 0.7,
+    // roughness: 0.2,
+    // transparent: true, // Abilita la trasparenza
+    // opacity: 0.8 // Imposta il livello di trasparenza (0.5 è un esempio, puoi modificarlo come preferisci)
+    // });
+
+    const material = new THREE.MeshPhysicalMaterial({
+        envMap: cubeTextures[0].texture,
+        color: 0xffffff,
+        metalness: 0,
+        roughness: .1,
+        transmission: 1,
+        // thickness: 1,
+        flatShading: true,
+        // specultarIntensity: 1,
+        // specularColor: 0xffffff,
+        // ior: 1.5,
+        tranparent: true
+    });
+
+    const sphereCenterRadius = 5
+    const sphereCenterGeom = new THREE.SphereGeometry(sphereCenterRadius, 8, 5)
+    const sphereCenter = new THREE.Mesh(sphereCenterGeom, material)
+    sphereCenter.position.x = 0
+    sphereCenter.position.y = 0
+    sphereCenter.position.z = 0
+    sphereCenter.castShadow = true
+    sphereCenter.receiveShadow = true
+    scene.add(sphereCenter)
+    const sphereCenterShape = new CANNON.Sphere(sphereCenterRadius, 5, 5)
+    const sphereCenterBody = new CANNON.Body({ mass: 0 })
+    sphereCenterBody.addShape(sphereCenterShape)
+    sphereCenterBody.position.x = 0
+    sphereCenterBody.position.y = 0
+    sphereCenterBody.position.z = 0
+
+    // Add random angular velocity
+    const randomAngularVelocity = new CANNON.Vec3(
+        Math.random() * 2 - 1,
+        Math.random() * 2 - 1,
+        Math.random() * 2 - 1
+    )
+    sphereCenterBody.angularVelocity.set(randomAngularVelocity.x,
+        randomAngularVelocity.y, randomAngularVelocity.z)
+
+    // Set angular damping
+    sphereCenterBody.angularDamping = 0.1
+
+    world.addBody(sphereCenterBody)
+
+    const clock = new THREE.Clock()
+    let delta
 
     // ANIMATE
     const animate = () => {
-        if (showStats) stats.begin() // XXX
+        if (showStats) stats.begin()
 
-        if (p.animate) {
-            // ANIMATION
-            const t = t0 + performance.now() * 0.0001
-            const t1 = t * p.lightSpeed + 0
-            const t2 = t1 + 10
-            camera.position.set(noise3D(t1, 0, 0) * 2, noise3D(0, t1 + 4, 0) * 1, -6)
-            controls.target.set(noise3D(t2, 0, 0) * 2, 1, noise3D(0, t2 + 4, 0) * 2)
-            // ...
-        }
-        // ...
+        delta = Math.min(clock.getDelta(), 0.1)
+        world.step(delta)
+
+        // Apply gravitational force to the central sphere
+        // v.set(-sphereCenterBody.position.x, -sphereCenterBody.position.y, -sphereCenterBody.position.z).normalize()
+        // v.scale(1, sphereCenterBody.force)
+        // sphereCenterBody.applyLocalForce(v)
+        // sphereCenterBody.force.y += sphereCenterBody.mass
+
+
+        sphereCenter.position.set(sphereCenterBody.position.x, sphereCenterBody.position.y, sphereCenterBody.position.z)
+        sphereCenter.quaternion.set(
+            sphereCenterBody.quaternion.x,
+            sphereCenterBody.quaternion.y,
+            sphereCenterBody.quaternion.z,
+            sphereCenterBody.quaternion.w
+        )
+
+        bloomPass.strength = MIC.getHighsVol(.1, 1)
 
         controls.update()
-        renderer.render(scene, camera) // RENDER
-        if (showStats) stats.end() // XXX
+        renderer.render(scene, camera)
+        composer.render() // POST-PROCESSING
+        if (showStats) stats.end()
 
-        animation = requestAnimationFrame(animate) // CIAK
+        animation = requestAnimationFrame(animate)
     }
+
     animate()
 }
 
 export function dispose() {
     cancelAnimationFrame(animation)
     controls?.dispose()
-    groundGeom?.dispose()
-    reflectorBackGeom?.dispose()
-    groundMate?.dispose()
-    stepSideGeom?.dispose()
-    mirrorMate?.dispose()
-    mirrorBack?.dispose()
+    camera = null
+    light1?.dispose()
+    light2?.dispose()
+    // world = null
     noise3D = null
-    ramps.forEach(ramp => scene.remove(ramp))
-    ramps.length = 0
-    scene.traverse((child) => {
-        if (child.geometry) {
-            child.geometry.dispose();
-        }
-        if (child.material) {
-            child.material.dispose();
-        }
-    });
-    light?.dispose()
-    lightD?.dispose()
-    // scene = null;
-    camera = null;
-    // gui?.destroy()
-    // ...
     window.removeEventListener('resize', onWindowResize)
 }

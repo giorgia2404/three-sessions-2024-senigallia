@@ -1,55 +1,62 @@
-// MOON
-// Partially inspired by NASA's https://github.com/vishkashpvp/moon3d
-// Moon texture: https://svs.gsfc.nasa.gov/cgi-bin/details.cgi?aid=4720
+// EYE
+
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
 
-import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
-import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 
 
 let scene, camera
-let geometry, groundGeom, moonGeometry, reflectorBackGeom
-let material, material2, groundMate, mirrorMate
-let mirrorBack // reflector
-let moonGlassMaterial
-let moonGlassGeom
-let dispMap
+let geometry, groundGeom, groundMate
+let material, material2, mirrorMate
 let animation
 let onWindowResize
 let noise3D
 let controls
-let starMaterial, starField
-let lightS, pointLight, pointLight2
+let loaderGLTF
+let lightS, light, pointLight
+let eye, eye2, eye3
 
 export function sketch() {
     // console.log("Sketch launched")
 
     const p = {
-        // objects
-        mirrorInclination: -Math.PI / 4,
-        // planets 
-        moonScale: 2,
-        moonPos: new THREE.Vector3(0, 9, 0),
-        moonSpeed: 0.7,
-        moonRotationSpeed: 0.02,
+        // colors
+        availableColorsHighlights: [0xffffff, 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff],
+        availableColors: [0xffffff, 0xcc0000, 0x00cc00, 0x0000cc, 0xcccc00, 0x00cccc, 0xcc00cc],
+        // time
+        timeSpeed: 0.0001,
+        // planet
+        planetScale: 3,
+        planetScaleAuto: true,
+        planetScaleMax: .25,
+        planetPos: new THREE.Vector3(0, 3, 0),
+        planetSpeed: .7,
+        planetRotationSpeed: 2,
         // view
-        lookAtCenter: new THREE.Vector3(0, 1.2, 0),
-        cameraPosition: new THREE.Vector3(-1, 0.5, -5.5),
+        lookAtCenter: new THREE.Vector3(0, 0, 0),
+        cameraPosition: new THREE.Vector3(-4 + Math.random() * 10, -3, 2.5 + Math.random() * 3),
         autoRotate: false,
-        autoRotateSpeed: -0.2,
+        autoRotateSpeed: -0.02,
         camera: 35,
-        steadyCam: true,
+        // bloom
+        exposure: 0,
+        bloomStrength: 2,
+        bloomThreshold: .25,
+        bloomRadius: 1.2,
         // world
-        background: new THREE.Color(0x000000),
-        floor: 0
+        background: new THREE.Color(0x333333),
+        floor: -4,
     }
 
+    // select main scene color, random choose for now
+    // let whichColor = p.availableColors.length * Math.random() | 0
+    // p.background = new THREE.Color(p.availableColors[whichColor])
+
     // other parameters
-    let near = 0.2, far = 2500
+    let near = 1, far = 50
     let shadowMapWidth = 2048, shadowMapHeight = 2048
-    let paused = false
 
     // CAMERA
     camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
@@ -61,7 +68,6 @@ export function sketch() {
         camera.aspect = window.innerWidth / window.innerHeight
         camera.updateProjectionMatrix()
         renderer.setSize(window.innerWidth, window.innerHeight)
-        // composer.setSize(window.innerWidth, window.innerHeight);
     }
     window.addEventListener('resize', onWindowResize)
 
@@ -71,8 +77,8 @@ export function sketch() {
     controls.enableDamping = true
     controls.dampingFactor = 0.05
     controls.minDistance = 3
-    controls.maxDistance = 7
-    controls.maxPolarAngle = Math.PI / 2 + .1
+    controls.maxDistance = 17
+    controls.maxPolarAngle = Math.PI / 2 + .2
     controls.minPolarAngle = 0
     controls.autoRotate = p.autoRotate
     controls.autoRotateSpeed = p.autoRotateSpeed
@@ -81,25 +87,126 @@ export function sketch() {
     // SCENE
     scene = new THREE.Scene()
     scene.background = p.background
-    scene.fog = new THREE.Fog(scene.background, 1, 10)
+    scene.fog = new THREE.Fog(scene.background, near, far)
+    // geometry = new THREE.ConeGeometry(1, 2, 64)
 
     mirrorMate = new THREE.MeshPhongMaterial({
-        color: 0x444444,
-        envMap: cubeTextures[0].texture,
+        color: 0xffffff,
+        map: textures[1].texture,
+        envMap: cubeTextures[1].texture,
         side: THREE.DoubleSide,
         // combine: THREE.addOperation,
         reflectivity: 1,
+        // flatShading: true,
+        shininess: 100,
         // specular: 0x999999,
         fog: true
     })
+
+    //  eye
+    // This "skull" model is based on "Skull Salazar (Downloadable)" (https://sketchfab.com/3d-models/skull-salazar-downloadable-eeed09437afb4e1ea8a6ff3b0e9964ad) by jvitorsouzadesign (https://sketchfab.com/jvitorsouzadesign) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+    //GLTFLoader
+    //eye
+    let gltfLoaded = false
+
+    loaderGLTF = new GLTFLoader()
+    loaderGLTF.load(
+        './assets/models/eye/scene.gltf',
+        (gltf) => {
+
+            gltfLoaded = true
+
+            eye = gltf.scene.children[0]
+            // eye.position.copy(p.lookAtCenter)
+            eye.position.y = .7
+            eye.rotation.x = -1.4
+
+            eye.traverse((node) => {
+                if (node.isMesh) {
+                    node.castShadow = true
+                    // node.receiveShadow = true
+                    if (node.name === "Object_4") {
+                        node.material = mirrorMate
+                        // node.material.roughness = 0
+                        // node.material.metalness = .2
+                        // node.material.fog = true
+                    }
+                }
+            })
+
+            scene.add(eye)
+
+            eye2 = clone(eye);
+            eye2.position.x = -5;
+            eye2.position.z = -2;
+            scene.add(eye2);
+
+            eye3 = clone(eye);
+            eye3.position.x = 5;
+            eye3.position.z = -2;
+            scene.add(eye3);
+
+            // let eyeMat = eye.children[0].children[0].material
+            // console.log(calaveraMat)
+            // eyeMat.map = null
+            // calaveraToothMat.map = null
+            // calaveraMat.roughness = 1
+            // calaveraToothMat.roughness = 1
+            gltfLoaded = true
+        },
+        (xhr) => {
+            // console.log((xhr.loaded / xhr.total * 100) + '% loaded')
+        },
+        (error) => {
+            // console.log('An error happened loading the GLTF scene')
+            alert(error)
+        }
+    )
+
+    // LIGHTS
+    lightS = new THREE.SpotLight(0x999999, 1 * PI, 0, Math.PI / 5, 0.5)
+    lightS.position.set(1, 2, 10)
+    lightS.target.position.set(0, 0, 0)
+    lightS.castShadow = true
+    lightS.shadow.camera.near = 5
+    lightS.shadow.camera.far = 200
+    lightS.shadow.bias = 0.0001
+    lightS.shadow.mapSize.width = shadowMapWidth
+    lightS.shadow.mapSize.height = shadowMapHeight
+    lightS.decay = 0
+    scene.add(lightS)
+
+    light = new THREE.DirectionalLight(0xffffff, .5 * PI)
+    light.position.set(0, 2, 10)
+    light.target.position.clone(eye)
+    light.decay = 0
+    // light.castShadow = true
+    scene.add(light)
+    // const light2 = new THREE.DirectionalLight(0xffffff, .4)
+    // light.position.set(-10, 3, -10)
+    // light.target.position.set(-5, 0, 0)
+    // light.castShadow = true
+    // scene.add(light2)
+    pointLight = new THREE.PointLight(0xffffff, 1 * PI)
+    pointLight.position.set(0, 1, 2)
+    scene.add(pointLight)
+    pointLight.decay = 0
+    // const pointLight = new THREE.PointLight(0xffffff, .5)
+    // pointLight.position.set(20, 20, 20)
+    // scene.add(pointLight)
+    // const pointLight2 = new THREE.PointLight(0xffffff, .1)
+    // pointLight2.position.set(-30, 20, -20)
+    // scene.add(pointLight2)
+    // const ambientLight = new THREE.AmbientLight(0xffffff)
+    // scene.add(ambientLight)
+
+    // let's make a ground
     groundMate = new THREE.MeshStandardMaterial({
-        color: 0x330000,
+        color: p.background,
         roughness: 1,
         metalness: 0,
         fog: true,
     })
-
-    // let's make a ground
     groundGeom = new THREE.PlaneGeometry(20, 20)
     let ground = new THREE.Mesh(groundGeom, groundMate)
     ground.position.set(0, p.floor, 0)
@@ -109,231 +216,35 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
 
-    moonGlassGeom = new THREE.IcosahedronGeometry(.5, 0)
-    moonGlassMaterial = new THREE.MeshPhysicalMaterial({
-        // transmission: 1,
-        // // opacity: .1,
-        // // transparent: true,
-        // thickness: .1,
-        // roughness: 0.07,
-        // envMap: cubeTextures[0].texture,
-        // envMapIntensity: 1.5
-
-        // color: 0x000000,
-        envMap: cubeTextures[0].texture,
-        // reflectivity: 1.0,
-        transmission: 1.0,
-        roughness: 0.0,
-        // metalness: 0.1,
-        // clearcoat: 0.1,
-        // clearcoatRoughness: 0.01,
-        // ior: 1,
-        thickness: .2,
-        fog: true,
-        side: THREE.DoubleSide
-    })
-    let moonGlass = new THREE.Mesh(moonGlassGeom, moonGlassMaterial)
-    // moonGlass.scale.set(p.moonScale+1, p.moonScale+1, p.moonScale+1)
-    moonGlass.position.z = -2
-    moonGlass.position.x = 1
-    moonGlass.position.y = .2
-    moonGlass.rotation.z = .2
-    moonGlass.castShadow = true
-    scene.add(moonGlass)
-
-    // moon
-    let moon
-    geometry = new THREE.SphereGeometry(1, 48, 48)
-    dispMap = textures[4].texture
-    material2 = new THREE.MeshPhysicalMaterial({
-        //color: 0xFFFFFF, 
-        color: 0xffffff,
-        //opacity: 0.5 ,
-        map: textures[3].texture,
-        bumpMap: dispMap,
-        bumpScale: 0.015,
-        roughness: 1,
-        metalness: 0,
-        fog: false
-    })
-    dispMap.wrapS = dispMap.wrapT = THREE.RepeatWrapping
-    // dispMap.repeat.set(1, 1)
-    moon = new THREE.Mesh(geometry, material2)
-    moon.scale.set(p.moonScale, p.moonScale, p.moonScale)
-    moon.rotation.x = Math.PI / 2
-    moon.position.copy(p.moonPos)
-    moon.castShadow = true
-    moon.receiveShadow = true
-    scene.add(moon)
-    // LIGHTS
-
-    // Stars field
-    const stars = [];
-    const starCount = window.innerWidth * 6;
-    for (let i = 0; i < starCount; i++) {
-        const distance = 8 + Math.random() * 50;
-        const angle = Math.random() * Math.PI * 2;
-        const z = (Math.random() - 0.5) * 2 * distance;
-        const x = Math.cos(angle) * Math.sqrt(distance * distance - z * z);
-        const y = Math.sin(angle) * Math.sqrt(distance * distance - z * z);
-        stars.push(x, y, z);
-    }
-    const starGeometry = new THREE.BufferGeometry();
-    starGeometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(stars, 3)
-    );
-    starMaterial = new THREE.PointsMaterial({
-        size: 0.1,
-        color: 0xffffff,
-        fog: false,
-    });
-    starField = new THREE.Points(starGeometry, starMaterial);
-    scene.add(starField);
-
-    // REFLECTOR
-    let mirrorW = .7
-    let mirrorH = 3
-    mirrorBack = new Reflector(
-        new THREE.PlaneGeometry(mirrorW, mirrorH),
-        {
-            // clipBias: 0.003,
-            color: new THREE.Color(0x7f7f7f),
-            textureWidth: window.innerWidth * window.devicePixelRatio,
-            textureHeight: window.innerHeight * window.devicePixelRatio,
-        })
-    mirrorBack.rotation.x = p.mirrorInclination + Math.PI / 2
-    mirrorBack.position.y = p.floor + 0.05 + .22
-    mirrorBack.position.z = 0
-    mirrorBack.rotation.y = Math.PI
-    mirrorBack.rotation.z = Math.PI / 2
-    scene.add(mirrorBack)
-    // let's make the mirror backside to do a shadow
-    reflectorBackGeom = new THREE.PlaneGeometry(mirrorW, mirrorH)
-    let reflectorBack = new THREE.Mesh(reflectorBackGeom, mirrorMate)
-    reflectorBack.rotation.x = p.mirrorInclination + Math.PI / 2
-    reflectorBack.position.y = p.floor + 0.04 + .22
-    reflectorBack.position.z = 0
-    reflectorBack.rotation.y = Math.PI
-    reflectorBack.castShadow = true
-    reflectorBack.rotation.z = Math.PI / 2
-    scene.add(reflectorBack)
-    // let's make some light below the mirror...
-    RectAreaLightUniformsLib.init();
-    let rectLightIntensity = 30
-    const rectLight = new THREE.RectAreaLight(0xffffff, rectLightIntensity, mirrorW + 0.025, mirrorH + 0.025)
-    rectLight.position.set(0, p.floor + 0.045 + .22, 0)
-    rectLight.rotation.x = p.mirrorInclination + Math.PI / 2
-    rectLight.rotation.z = Math.PI / 2
-    scene.add(rectLight)
-    const rectLightHelper = new RectAreaLightHelper(rectLight)
-    rectLight.add(rectLightHelper)
-
-
-    const ambientLight = new THREE.AmbientLight(0xffffff)
-    // scene.add(ambientLight)
-
-    // LIGHTS
-    lightS = new THREE.SpotLight(0x999999, 1 * PI, 0, Math.PI / 5, 0.5)
-    lightS.position.set(1, 50, 0)
-    lightS.target.position.set(0, 0, 0)
-    lightS.castShadow = true
-    lightS.shadow.camera.near = 5
-    lightS.shadow.camera.far = 500
-    lightS.shadow.bias = 0.0001
-    lightS.shadow.mapSize.width = shadowMapWidth
-    lightS.shadow.mapSize.height = shadowMapHeight
-    lightS.decay = 0
-    scene.add(lightS)
-
-    // const light = new THREE.DirectionalLight(0xffffff, 1)
-    // light.position.set(-10, 3, 0)
-    // light.target.position.set(-10, 0, 0)
-    // // light.castShadow = true
-    // scene.add(light)
-    // const light2 = new THREE.DirectionalLight(0xffffff, .4)
-    // light.position.set(-10, 3, 0)
-    // light.target.position.set(-5, 0, 0)
-    // light.castShadow = true
-    // scene.add(light2)
-    pointLight = new THREE.PointLight(0xffffff, 2 * PI)
-    pointLight.position.set(-70, 10, 20)
-    pointLight.decay = 0
-    scene.add(pointLight)
-    pointLight2 = new THREE.PointLight(0xffffff, .1 * PI)
-    pointLight2.position.set(-30, 20, -20)
-    pointLight2.decay = 0
-    scene.add(pointLight2) 
-    // const ambientLight = new THREE.AmbientLight(0xffffff)
-    // scene.add(ambientLight)
-
-    const steadycamFlowSpeed = .02; // Adjust this value to change the speed of the steadycam flow
-    const steadycamFlowAmplitude = 0.01; // Adjust this value to change the amplitude of the steadycam flow
-    let steadycamFlowTime = 0;
-    function clamp(value, min, max) {
-        return Math.min(Math.max(value, min), max);
-    }
-    const steadycamBounds = {
-        x: { min: -2.5, max: 2.5 },
-        y: { min: 0, max: 1.5 },
-        z: { min: -15, max: -4 }
-    };
-
     // NOISE
     noise3D = NOISE.createNoise3D()
     const t0 = Math.random() * 10
 
-    const clock = new THREE.Clock()
-
     // ANIMATE
     const animate = () => {
         if (showStats) stats.begin() // XXX
-        if (!paused) {
 
-            const t = t0 + performance.now() * 0.0001
-            let dt = clock.getDelta()
+        const t = t0 + performance.now() * p.timeSpeed
 
-            // ANIMATION
-            if (moon) {
-                const t1 = t * p.moonSpeed
-                moon.position.x = p.moonPos.x + noise3D(0, t1, 0) * .1
-                moon.position.y = p.moonPos.y + noise3D(t1 + 4, 0, 0) * .2
-                moon.position.z = p.moonPos.z + noise3D(0, 0, t1 + 8) * .1
-                moon.rotation.y += noise3D(0, 0, t + 10) * p.moonRotationSpeed
-                starField.rotation.y -= noise3D(0, 0, t + 10) * p.moonRotationSpeed * .1
-                // moonGlass.position.copy(moon.position)
-            }
-            // ...
+        // ANIMATION
+        if (gltfLoaded && eye) {
+            // pointLight1.position.copy(eye.position)
+            // pointLight1.position.y -= .5
+            const t3 = t * p.planetSpeed + 2
+            eye.rotation.z = -0.1 + noise3D(0, t3 + 4, 0) * .8
+            eye.rotation.y = -0.1 + noise3D(0, 0, t3) * .8
 
-            // Update steadycam flow time
-            steadycamFlowTime += dt * steadycamFlowSpeed;
+            eye2.rotation.z = -0.1 + noise3D(0, t3 + 7, 0) * .5
+            eye2.rotation.y = -0.1 + noise3D(0, 0, t3 + 22) * .5
 
-            // Calculate steadycam flow offsets using noise functions
-            const steadycamFlowX = noise3D(steadycamFlowTime, 0, 0) * steadycamFlowAmplitude;
-            const steadycamFlowY = noise3D(0, steadycamFlowTime, 0) * steadycamFlowAmplitude;
-            const steadycamFlowZ = noise3D(0, 0, steadycamFlowTime) * steadycamFlowAmplitude;
-
-            // Apply steadycam flow to camera position if not in drag mode
-            if (!controls.isDragging && p.steadyCam) {
-                // const cameraPosition = controls.object.position.clone();
-                // cameraPosition.add(new THREE.Vector3(steadycamFlowX, steadycamFlowY, steadycamFlowZ));
-                // controls.object.position.copy(cameraPosition);
-                const cameraPosition = controls.object.position.clone();
-                cameraPosition.add(new THREE.Vector3(steadycamFlowX, steadycamFlowY, steadycamFlowZ));
-
-                // Clamp the camera position within the defined boundaries
-                cameraPosition.x = clamp(cameraPosition.x, steadycamBounds.x.min, steadycamBounds.x.max);
-                cameraPosition.y = clamp(cameraPosition.y, steadycamBounds.y.min, steadycamBounds.y.max);
-                cameraPosition.z = clamp(cameraPosition.z, steadycamBounds.z.min, steadycamBounds.z.max);
-
-                controls.object.position.copy(cameraPosition);
-            }
+            eye3.rotation.z = -0.1 + noise3D(0, t3 + 9, 0) * .3
+            eye3.rotation.y = -0.1 + noise3D(0, 0, t3 + 12) * .3
         }
+
 
         controls.update()
         renderer.render(scene, camera) // RENDER
         if (showStats) stats.end() // XXX
-
 
         animation = requestAnimationFrame(animate) // CIAK
     }
@@ -344,18 +255,27 @@ export function dispose() {
     cancelAnimationFrame(animation)
     controls?.dispose()
     geometry?.dispose()
-    moonGeometry?.dispose()
-    mirrorMate?.dispose()
-    reflectorBackGeom?.dispose();
-    moonGlassGeom?.dispose();
-    moonGlassMaterial?.dispose();
-    starMaterial?.dispose();
-    groundGeom?.dispose()
     material?.dispose()
     material2?.dispose()
-    groundMate?.dispose()
-    dispMap?.dispose()
     noise3D = null
+    eye?.traverse((node) => {
+        if (node.isMesh) {
+            node.geometry.dispose();
+            node.material.dispose();
+        }
+    });
+    eye2?.traverse((node) => {
+        if (node.isMesh) {
+            node.geometry.dispose();
+            node.material.dispose();
+        }
+    });
+    eye3?.traverse((node) => {
+        if (node.isMesh) {
+            node.geometry.dispose();
+            node.material.dispose();
+        }
+    });
     scene.traverse((child) => {
         if (child.geometry) {
             child.geometry.dispose();
@@ -364,10 +284,10 @@ export function dispose() {
             child.material.dispose();
         }
     });
-    lightS?.dispose()
-    pointLight?.dispose()
-    pointLight2?.dispose()
+    light?.dispose();
+    lightS?.dispose();
+    pointLight?.dispose();
     camera = null;
-    mirrorBack = null;
+    // scene = null;
     window.removeEventListener('resize', onWindowResize)
 }

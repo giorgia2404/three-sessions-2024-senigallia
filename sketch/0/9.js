@@ -1,8 +1,6 @@
 // TANGO
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { clearcoatRoughness } from 'three/examples/jsm/nodes/Nodes.js'
-import { ior, thickness } from 'three/examples/jsm/nodes/core/PropertyNode.js'
 
 let scene, camera, animation
 let light1, light2
@@ -23,7 +21,7 @@ export function sketch() {
         maxSphereRadius: 2,
         // camera
         lookAtCenter: new THREE.Vector3(0, 0, 0),
-        cameraPosition: new THREE.Vector3(25, -25 + Math.random() * 10, 10 + Math.random() * 10),
+        cameraPosition: new THREE.Vector3(25, -25 + Math.random() * 50, 70 + Math.random() * 40),
         autoRotate: true,
         autoRotateSpeed: -10 + Math.random() * 20,
         camera: 35,
@@ -76,11 +74,6 @@ export function sketch() {
     light1.position.set(10, 5, 5)
     // light1.angle = Math.PI / 4
     // light1.penumbra = 0.5
-    light1.castShadow = true
-    light1.shadow.mapSize.width = 1024
-    light1.shadow.mapSize.height = 1024
-    light1.shadow.camera.near = 0.5
-    light1.shadow.camera.far = 100
     light1.decay = 0
     scene.add(light1)
 
@@ -92,7 +85,7 @@ export function sketch() {
     light2.shadow.mapSize.width = 1024
     light2.shadow.mapSize.height = 1024
     light2.shadow.camera.near = 0.5
-    light2.shadow.camera.far = 100
+    light2.shadow.camera.far = 20
     light2.decay = 0
     scene.add(light2)
 
@@ -150,7 +143,7 @@ export function sketch() {
     });
 
     const sphereCenterRadius = 5
-    const sphereCenterGeom = new THREE.SphereGeometry(sphereCenterRadius, 48, 48)
+    const sphereCenterGeom = new THREE.SphereGeometry(sphereCenterRadius, 32, 32)
     const sphereCenter = new THREE.Mesh(sphereCenterGeom, centralMate)
     sphereCenter.position.x = 0
     sphereCenter.position.y = 0
@@ -158,7 +151,7 @@ export function sketch() {
     sphereCenter.castShadow = true
     sphereCenter.receiveShadow = true
     scene.add(sphereCenter)
-    const sphereCenterShape = new CANNON.Sphere(sphereCenterRadius, 48, 48)
+    const sphereCenterShape = new CANNON.Sphere(sphereCenterRadius, 32, 32)
     const sphereCenterBody = new CANNON.Body({ mass: 0 })
     sphereCenterBody.addShape(sphereCenterShape)
     sphereCenterBody.position.x = 0
@@ -285,12 +278,6 @@ export function sketch() {
             )
 
         })
-
-        // if (!controls.isDragging) {
-        //     const cameraPosition = controls.object.position.clone();
-        //     cameraPosition.z = MIC.getHighsVol(10, 20);
-        //     controls.object.position.copy(cameraPosition);
-        // }
 
         controls.update()
         renderer.render(scene, camera)

@@ -37,7 +37,7 @@ global.CANNON = CANNON
 global.NOISE = NOISE
 global.PI = Math.PI
 
-global.showStats = true // xxx
+global.showStats = false // xxx
 
 let myThree
 const artFolder = "sketch"
@@ -67,10 +67,10 @@ const changeSketch = (sketch) => {
 	const loc = current_set + '/' + sketch
 	const sketchName = loc + '.js'
 	// if (isSketchValid(`../sketch/${sketchName}`)) { // <<< enable locally to avoid stops on empty sketches
-	current_sketch = sketch
-	loadSketch(sketchName)
-	// console.log('Loading Sketch: ' + sketchName)
-	document.location.hash = loc
+		current_sketch = sketch
+		loadSketch(sketchName)
+		// console.log('Loading Sketch: ' + sketchName)
+		document.location.hash = loc
 	// }
 }
 const loadSketch = async (sketchName) => {
@@ -243,6 +243,8 @@ global.initAudio = () => { // OPENDAY 2024 AND BROWSER EDITION + SOUNDTRACK
 	global.MIC = new mic()
 	// console.log(global.MIC)
 	document.getElementById("loader").style.display = "none"
+	toggleFullscreen();
+	toggleMouse();
 	// randomSketch()
 	// toggleDirector()
 	// const soundtrack = document.createElement('audio')
@@ -385,13 +387,13 @@ const randomSketch = () => {
 	/* 
 	0 colors
 	1 mirror
- 	2 ...
- 	3 landscape
-        4 cloth
+	  2 ...
+	  3 landscape
+		4 cloth
 	*/
-	const sets = [0, 1, 2, 3, 4] // available sets
-	const setsWeights = [0.20, 0.20, 0.20, 0.20, 0.20] // available sets: probability weight
-	const sketches = [1, 3, 3, 2, 1] // no. of available sketches for each set
+	const sets = [0, 1, 2, 3, 4, 5] // available sets
+	const setsWeights = [0.15, 0.15, 0.15, 0.15, 0.15, 0.15] // available sets: probability weight
+	const sketches = [7, 2, 3, 3, 3, 3] // no. of available sketches for each set
 	// playSet
 	// pure random
 	// global.playSet = Math.round(Math.random() * (sets.length - 1));
